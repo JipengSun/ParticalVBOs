@@ -1,4 +1,58 @@
-    function Groundgrid() {
+  function drawGrid(){
+    var floatsPerVertex = 7;
+    var xcount = 100;			// # of lines to draw in x,y to make the grid.
+    var ycount = 100;		
+    var xymax	= 50.0;			// grid size; extends to cover +/-xymax in x and y.
+    var xColr = new Float32Array([1.0, 1.0, 0.3]);	// bright yellow
+    var yColr = new Float32Array([0.5, 1.0, 0.5]);	// bright green.
+    
+    // Create an (global) array to hold this ground-plane's vertices:
+    gndVerts = new Float32Array(floatsPerVertex*2*(xcount+ycount));
+        // draw a grid made of xcount+ycount lines; 2 vertices per line.
+        
+    var xgap = xymax/(xcount-1);		// HALF-spacing between lines in x,y;
+    var ygap = xymax/(ycount-1);		// (why half? because v==(0line number/2))
+    
+    // First, step thru x values as we make vertical lines of constant-x:
+    for(v=0, j=0; v<2*xcount; v++, j+= floatsPerVertex) {
+    if(v%2==0) {	// put even-numbered vertices at (xnow, -xymax, 0)
+      gndVerts[j  ] = -xymax + (v  )*xgap;	// x
+      gndVerts[j+1] = -xymax;								// y
+      gndVerts[j+2] = -1.0;									// z
+      gndVerts[j+3] = 1.0;
+    }
+    else {				// put odd-numbered vertices at (xnow, +xymax, 0).
+      gndVerts[j  ] = -xymax + (v-1)*xgap;	// x
+      gndVerts[j+1] = xymax;								// y
+      gndVerts[j+2] = -1.0;									// z
+      gndVerts[j+3] = 1.0;
+    }
+    gndVerts[j+4] = xColr[0];			// red
+    gndVerts[j+5] = xColr[1];			// grn
+    gndVerts[j+6] = xColr[2];			// blu
+    }
+    // Second, step thru y values as wqe make horizontal lines of constant-y:
+    // (don't re-initialize j--we're adding more vertices to the array)
+    for(v=0; v<2*ycount; v++, j+= floatsPerVertex) {
+    if(v%2==0) {		// put even-numbered vertices at (-xymax, ynow, 0)
+      gndVerts[j  ] = -xymax;								// x
+      gndVerts[j+1] = -xymax + (v  )*ygap;	// y
+      gndVerts[j+2] = -1.0;									// z
+      gndVerts[j+3] = 1.0;
+    }
+    else {					// put odd-numbered vertices at (+xymax, ynow, 0).
+      gndVerts[j  ] = xymax;								// x
+      gndVerts[j+1] = -xymax + (v-1)*ygap;	// y
+      gndVerts[j+2] = -1.0;									// z
+      gndVerts[j+3] = 1.0;
+    }
+    gndVerts[j+4] = yColr[0];			// red
+    gndVerts[j+5] = yColr[1];			// grn
+    gndVerts[j+6] = yColr[2];			// blu
+    }
+
+  }
+  function groundVBO() {
     //=============================================================================
     //=============================================================================
     // CONSTRUCTOR for one re-usable 'VBObox0' object that holds all data and fcns
@@ -14,12 +68,11 @@
     
     this.VERT_SRC =	//--------------------- VERTEX SHADER source code 
     'attribute vec4 a_Position;\n' +
-    'attribute vec4 a_Color;\n' +
+    'attribute vec3 a_Color;\n' +
     'uniform mat4 u_MvpMatrix;\n' +
-    'uniform vec4 translation;'+
-    'varying vec4 v_Color;\n' +
+    'varying vec3 v_Color;\n' +
     'void main() {\n' +
-    '  gl_Position = u_MvpMatrix * (a_Position + translation);\n' +
+    '  gl_Position = u_MvpMatrix * a_Position;\n' +
     '  v_Color = a_Color;\n' +
     '}\n';
     
@@ -27,64 +80,16 @@
     '#ifdef GL_ES\n' +
     'precision mediump float;\n' +
     '#endif\n' +
-    'varying vec4 v_Color;\n' +
+    'varying vec3 v_Color;\n' +
     'void main() {\n' +
-    '  gl_FragColor = v_Color;\n' +
+    '  gl_FragColor = vec4(v_Color,1.0);\n' +
     '}\n';
     
-    this.xcount = 100;			// # of lines to draw in x,y to make the grid.
-    this.ycount = 100;		
-    this.xymax	= 50.0;			// grid size; extends to cover +/-xymax in x and y.
-    this.xColr = new Float32Array([1.0, 1.0, 0.3]);	// bright yellow
-    this.yColr = new Float32Array([0.5, 1.0, 0.5]);	// bright green.
-    
-    // Create an (global) array to hold this ground-plane's vertices:
-    this.gndVerts = new Float32Array(floatsPerVertex*2*(this.xcount+this.ycount));
-        // draw a grid made of xcount+ycount lines; 2 vertices per line.
-        
-    this.xgap = this.xymax/(this.xcount-1);		// HALF-spacing between lines in x,y;
-    this.ygap = this.xymax/(this.ycount-1);		// (why half? because v==(0line number/2))
-    
-    // First, step thru x values as we make vertical lines of constant-x:
-    for(v=0, j=0; v<2*this.xcount; v++, j+= floatsPerVertex) {
-    if(v%2==0) {	// put even-numbered vertices at (xnow, -xymax, 0)
-      this.gndVerts[j  ] = -this.xymax + (v  )*this.xgap;	// x
-      this.gndVerts[j+2] = -this.xymax;								// y
-      this.gndVerts[j+1] = -1.0;									// z
-    }
-    else {				// put odd-numbered vertices at (xnow, +xymax, 0).
-      this.gndVerts[j  ] = -this.xymax + (v-1)*this.xgap;	// x
-      this.gndVerts[j+2] = this.xymax;								// y
-      this.gndVerts[j+1] = -1.0;									// z
-    }
-    this.gndVerts[j+3] = this.xColr[0];			// red
-    this.gndVerts[j+4] = this.xColr[1];			// grn
-    this.gndVerts[j+5] = this.xColr[2];			// blu
-    }
-    // Second, step thru y values as wqe make horizontal lines of constant-y:
-    // (don't re-initialize j--we're adding more vertices to the array)
-    for(v=0; v<2*this.ycount; v++, j+= floatsPerVertex) {
-    if(v%2==0) {		// put even-numbered vertices at (-xymax, ynow, 0)
-      this.gndVerts[j  ] = -this.xymax;								// x
-      this.gndVerts[j+2] = -this.xymax + (v  )*this.ygap;	// y
-      this.gndVerts[j+1] = -1.0;									// z
-    }
-    else {					// put odd-numbered vertices at (+xymax, ynow, 0).
-      this.gndVerts[j  ] = this.xymax;								// x
-      this.gndVerts[j+2] = -this.xymax + (v-1)*this.ygap;	// y
-      this.gndVerts[j+1] = -1.0;									// z
-    }
-    this.gndVerts[j+3] = this.yColr[0];			// red
-    this.gndVerts[j+4] = this.yColr[1];			// grn
-    this.gndVerts[j+5] = this.yColr[2];			// blu
-    }
+    drawGrid();
 
-
-    this.vboContents =  this.gndVerts
-    console.log(this.vboContents.length + 'aaaaaa'+this.vboContents.length/6+
-      'aaaaaaaaaaaaaaaaaaaa'); 
+    this.vboContents =  gndVerts;
     
-    this.vboVerts = 6;						// # of vertices held in 'vboContents' array
+    this.vboVerts = gndVerts.length/7;						// # of vertices held in 'vboContents' array
     this.FSIZE = this.vboContents.BYTES_PER_ELEMENT;
                     // bytes req'd by 1 vboContents array element;
                     // (why? used to compute stride and offset 
@@ -93,16 +98,17 @@
                     // total number of bytes stored in vboContents
                     // (#  of floats in vboContents array) * 
                     // (# of bytes/float).
-    this.vboStride = this.FSIZE * 6; 
+    this.vboStride = this.vboBytes/this.vboVerts;
                     // (== # of bytes to store one complete vertex).
                     // From any attrib in a given vertex in the VBO, 
                     // move forward by 'vboStride' bytes to arrive 
                     // at the same attrib for the next vertex. 
     
           //----------------------Attribute sizes
-    this.vboFcount_a_Pos0 =  3;    // # of floats in the VBO needed to store the
+    this.vboFcount_a_Pos0 =  4;    // # of floats in the VBO needed to store the
                     // attribute named a_Pos0. (4: x,y,z,w values)
     this.vboFcount_a_Colr0 = 3;   // # of floats for this attrib (r,g,b values) 
+    console.log(this.vboVerts)
     console.assert((this.vboFcount_a_Pos0 +     // check the size of each and
             this.vboFcount_a_Colr0) *   // every attribute in our VBO
             this.FSIZE == this.vboStride, // for agreeement with'stride'
@@ -127,15 +133,15 @@
           //---------------------- Uniform locations &values in our shaders
     this.mvpMatrix = new Matrix4();	// Transforms CVV axes to model axes.
     this.u_MvpMatrix;							// GPU location for u_ModelMat uniform
-    this.translation;
-    this.number = this.vboContents.length/floatsPerVertex;
+
+
     this.Tx = 0.0;
     this.Ty = 0.0;
     this.Tz = -1.5;
   
     };
-    
-  Groundgrid.prototype.init = function() {
+   
+  groundVBO.prototype.init = function() {
   //=============================================================================
   // Prepare the GPU to use all vertices, GLSL shaders, attributes, & uniforms 
   // kept in this VBObox. (This function usually called only once, within main()).
@@ -177,7 +183,7 @@
     gl.bindBuffer(gl.ARRAY_BUFFER,	      // GLenum 'target' for this GPU buffer 
             this.vboLoc);				  // the ID# the GPU uses for this buffer.
     console.log(this.vboLoc+ 
-      'first bufferid for groundgrid');
+      'first bufferid for groundVBO');
     // Fill the GPU's newly-created VBO object with the vertex data we stored in
     //  our 'vboContents' member (JavaScript Float32Array object).
     //  (Recall gl.bufferData() will evoke GPU's memory allocation & management: 
@@ -215,13 +221,10 @@
    if (!this.u_MvpMatrix) { 
      console.log('Failed to get the storage location of u_MvpMatrix');
      return;
-   }
-
-   this.translation = gl.getUniformLocation(this.shaderLoc, 'translation');
- 
+   } 
   }
 
-  Groundgrid.prototype.switchToMe = function() {
+  groundVBO.prototype.switchToMe = function() {
     //==============================================================================
     // Set GPU to use this VBObox's contents (VBO, shader, attributes, uniforms...)
     //
@@ -247,7 +250,7 @@
       gl.bindBuffer(gl.ARRAY_BUFFER,	    // GLenum 'target' for this GPU buffer 
                         this.vboLoc);			// the ID# the GPU uses for our VBO.
       console.log(this.vboLoc+ 
-        'bufferid for groundgrid');
+        'bufferid for groundVBO');
     // c) connect our newly-bound VBO to supply attribute variable values for each
     // vertex to our SIMD shader program, using 'vertexAttribPointer()' function.
     // this sets up data paths from VBO to our shader units:
@@ -277,28 +280,23 @@
       gl.enableVertexAttribArray(this.a_PosLoc);
       gl.enableVertexAttribArray(this.a_ColrLoc);
 
+  }
   
-   gl.uniform4f(this.translation, this.Tx, this.Ty, this.Tz, 0.0);
- 
-    }
-  
-  Groundgrid.prototype.draw = function() {
+  groundVBO.prototype.render = function() {
   //=============================================================================
   // Render current VBObox contents.
   console.log(this.constructor.name + 
     '.init() get the GPU location of attribute a_Color');
-
-   gl.uniform4f(this.translation, this.Tx, this.Ty, this.Tz, 0.0);
     
     gl.drawArrays(gl.LINES,							// use this drawing primitive, and
     0,	// start at this vertex number, and
-    this.number);		// draw this many vertices
-   
+    this.vboVerts);		// draw this many vertices
   
   }
 
-  Groundgrid.prototype.adjust = function(){
-  
+  groundVBO.prototype.adjust = function(){
+
+
     this.mvpMatrix.setIdentity();
 // THIS DOESN'T WORK!!  this.ModelMatrix = g_worldMat;
     this.mvpMatrix.set(g_worldMat);	// use our global, shared camera.
@@ -308,7 +306,10 @@
 //  this.ModelMat.translate(0.35, 0, 0);							// then translate them.
 //  Transfer new uniforms' values to the GPU:-------------
 // Send  new 'ModelMat' values to the GPU's 'u_ModelMat1' uniform: 
-gl.uniformMatrix4fv(this.u_MvpMatrix, false, this.mvpMatrix.elements);
+    gl.uniformMatrix4fv(this.u_MvpMatrix, false, this.mvpMatrix.elements);
 // Adjust the attributes' stride and offset (if necessary)
 // (use gl.vertexAttribPointer() calls and gl.enableVertexAttribArray() calls)
-}
+ 
+
+
+  }

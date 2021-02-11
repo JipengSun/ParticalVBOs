@@ -1,79 +1,3 @@
-//3456789_123456789_123456789_123456789_123456789_123456789_123456789_123456789_
-// (JT: why the numbers? counts columns, helps me keep 80-char-wide listings)
-//
-// ORIGINAL SOURCE:
-// RotatingTranslatedTriangle.js (c) 2012 matsuda
-// HIGHLY MODIFIED to make:
-//
-// BouncyBall.js  for EECS 351-1, 
-//									Northwestern Univ. Jack Tumblin
-//  (see previous week's starter code for earlier versions)
-//  PartSysBouncy10:---------------------
-//    --UPDATE keyboard handler to eliminate now-deprecated 'KeyPress' callback.
-//			as the program starts, when users press the 'R' key too ('deep reset').  
-//			Make a related function for the 'r' key that updates only the velocities 
-//			for all particles in the current state.
-//    --add 'f/F' key to toggle age constraint (particle fountain).
-//    --Refine 'partSys.js' file to hold PartSys prototype & related items.
-//    --SIMPLIFY, REDISTRIBUTE our still-too-large 'draw' function:
-//      1) move the constraint-applying code to the 'g_partA.applyConstraints(). 
-//      Improve it: apply constraints to ALL particles in the state-variable(s).
-//      2) Replace the tedious variable-by-variable swapping of s1,s2 elements
-//      in drawAll() with a call to 'g_partA.swap()', a function that switches 
-//			the contents of the s1  and s2 state vars (see week2 starter code named
-//        'swapTest' to BE SURE it swaps references only; NOT a 'deep copy'!!)
-//      3) Move particle-movement-solving code from 'draw()' to partA.solver().
-//  PartSysBouncy12:
-//      4) Add particle-aging constraint: 'f/F' key toggles fire-like 'fountain' 
-//      5) Update 'drawAll()' to follow the recommended simulation loop given
-//        in lecture notes D :
-//      ApplyAllForces(), dotFinder(), Solver(), doConstraint(), Swap(), Render(),
-//      (also: remove unneeded swap() calls at start of Solver()!)  
-//  PartSysBouncy13:
-//      5) Create s1dot state var (in PartSys.prototype.initBouncy2D() fcn),
-//        Create a force-applying 'CForcer' object prototype and constraint-applying 
-//        object 'CLimit' at the end of PartSys05
-//      6) In PartSys.initBouncy2D(),create 'this.forceList' array of CForcers
-//        and 'push' a CForcer for Earth gravity onto the array; 
-//        Create 'this.limitList' array of CLimit objects and 'push' a CLimit
-//        object for our LIM_VOL box-like enclosure onto the array;
-//      7) implement the 'applyForces()' and 'dotFinder()' functions using
-//        g_PartA.forceList array, the g_partA.s1 array, and g_partA.s1dot array.
-//      8) use s1,s2, and s1dot to implement Euler solver in solver().
-//  PartSysBouncy14:
-//      9) correct bugs (e.g. solver() SOLV_EULER loop indices & array indices;
-//        single-step), 
-//       clean up code for keyDown(), add a 'drag' CForcer SOLV_EULER needed; 
-//       add CForcer.printMe(),
-
-//      update the 'doConstraints()' function to use CLimit objects in 
-//        g_partA.limitList() to implement the box that holds our particles..
-
-//==============================================================================
-
-// --Each instance computes all the on-screen attributes for just one PIXEL.
-// --Draw large POINTS primitives as ROUND instead of square.  HOW?
-//   See pg. 377 in  textbook: "WebGL Programming Guide".  The vertex shaders' 
-// gl_PointSize value sets POINTS primitives' on-screen width and height, and
-// by default draws POINTS as a square on-screen.  In the fragment shader, the 
-// built-in input variable 'gl_PointCoord' gives the fragment's location within
-// that 2D on-screen square; value (0,0) at squares' lower-left corner, (1,1) at
-// upper right, and (0.5,0.5) at the center.  The built-in 'distance()' function
-// lets us discard any fragment outside the 0.5 radius of POINTS made circular.
-// (CHALLENGE: make a 'soft' point: color falls to zero as radius grows to 0.5)?
-// -- NOTE! gl_PointCoord is UNDEFINED for all drawing primitives except POINTS;
-// thus our 'draw()' function can't draw a LINE_LOOP primitive unless we turn off
-// our round-point rendering.  
-// -- All built-in variables: http://www.opengl.org/wiki/Built-in_Variable_(GLSL)
-
-// Global Variables
-// =========================
-// Use globals to avoid needlessly complex & tiresome function argument lists.
-// For example, the WebGL rendering context 'gl' gets used in almost every fcn;
-// requiring 'gl' as an argument won't give us any added 'encapsulation'; make
-// it global.  Later, if the # of global vars grows, we can unify them in to 
-// one (or just a few) sensible global objects for better modularity.
-
 var gl;   // webGL Rendering Context.  Created in main(), used everywhere.
 var g_canvas; // our HTML-5 canvas object that uses 'gl' for drawing.
 var g_digits = 5; // # of digits printed on-screen (e.g. x.toFixed(g_digits);
@@ -126,21 +50,20 @@ var floatsPerVertex = 6;
 
 g_worldMat = new Matrix4()
 
-var g_EyeX = 3;
-var g_EyeY = 3;
-var g_EyeZ = 7;
+var current_rotation = 0;
+var x_Coordinate = -8;
+var y_Coordinate = 0;
+var z_Coordinate = 0.5;
+var x_lookAt = 0;
+var y_lookAt = 0;
+var z_lookAt = z_Coordinate;
+
 // Our first global particle system object; contains 'state variables' s1,s2;
 //---------------------------------------------------------
 var g_partA = new PartSys();   // create our first particle-system object;
 							  // for code, see PartSys.js
 
-var grid = new Groundgrid();	
-
-
-
-
-
-
+var ground = new groundVBO();	
 
 
 function main() {
@@ -213,7 +136,7 @@ function main() {
   // Initialize Particle systems:
 
   //worldBox.init(gl);
-  grid.init();
+  ground.init();
   
   g_partA.initBouncy2D(100);        // create a 2D bouncy-ball system where
                                     // 2 particles bounce within -0.9 <=x,y<0.9
@@ -303,9 +226,9 @@ function drawAll() {
     //==========================================    
 		// Make our 'bouncy-ball' move forward by one timestep, but now the 's' key 
 		// will select which kind of solver to use by changing g_partA.solvType:
-	grid.switchToMe();
-	grid.adjust();
-	grid.draw();
+    ground.switchToMe();
+	ground.adjust();
+	ground.render();
 	g_partA.switchToMe();  
 	g_partA.applyForces(g_partA.s1, g_partA.forceList);  // find current net force on each particle
     g_partA.dotFinder(g_partA.s1dot, g_partA.s1); // find time-derivative s1dot from s1;
@@ -615,37 +538,37 @@ function myKeyDown(kev) {
       break;
 		case "ArrowLeft": 	
 			// and print on webpage in the <div> element with id='Result':
-		g_EyeX -= 0.1;
+		x_Coordinate -= 0.1;
   		document.getElementById('KeyDown').innerHTML =
   			'myKeyDown(): Arrow-Left,keyCode='+kev.keyCode;
 			console.log("Arrow-Left key(UNUSED)");
   		break;
 		case "ArrowRight":
-		g_EyeX += 0.1;
+		x_Coordinate += 0.1;
   		document.getElementById('KeyDown').innerHTML =
   			'myKeyDown(): Arrow-Right,keyCode='+kev.keyCode;
   		console.log("Arrow-Right key(UNUSED)");
   		break;
 		case "ArrowUp":	
-		g_EyeY += 0.1;	
+		y_Coordinate += 0.1;	
   		document.getElementById('KeyDown').innerHTML =
   			'myKeyDown(): Arrow-Up,keyCode='+kev.keyCode;
   		console.log("Arrow-Up key(UNUSED)");
 			break;
 		case "ArrowDown":
-		g_EyeY -= 0.1;	
+		y_Coordinate -= 0.1;	
   		document.getElementById('KeyDown').innerHTML =
   			'myKeyDown(): Arrow-Down,keyCode='+kev.keyCode;
   			console.log("Arrow-Down key(UNUSED)");
 		  break;	
 		case "KeyN":
-		g_EyeZ -= 0.1;	
+		z_Coordinate -= 0.1;	
   		document.getElementById('KeyDown').innerHTML =
   			'KeyDown(): Arrow-Down,keyCode='+kev.keyCode;
   			console.log("Arrow-Down key(UNUSED)");
 		  break;
 		case "KeyJ":
-		g_EyeZ += 0.1;	
+		z_Coordinate += 0.1;	
   		document.getElementById('KeyDown').innerHTML =
   			'KeyDown(): Arrow-Down,keyCode='+kev.keyCode;
   			console.log("Arrow-Down key(UNUSED)");
@@ -726,9 +649,9 @@ function setCamera() {
                           1.0,   // camera z-near distance (always positive; frustum begins at z = -znear)
                           100.0);  // camera z-far distance (always positive; frustum ends at z = -zfar)
     
-        g_worldMat.lookAt( g_EyeX, g_EyeY, g_EyeZ,	// center of projection
-                                       0.0, 0.0, 0.0,	// look-at point 
-                                       0.0, 1.0, 0.0);	// View UP vector.
+		g_worldMat.lookAt(  x_Coordinate,   y_Coordinate,   z_Coordinate,
+							x_lookAt,       y_lookAt,  		z_lookAt,
+							0,  			0,      		1);
         // READY to draw in the 'world' coordinate system.
     //------------END COPY
     
