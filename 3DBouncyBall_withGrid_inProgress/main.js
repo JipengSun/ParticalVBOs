@@ -58,12 +58,24 @@ var x_lookAt = 0;
 var y_lookAt = 0;
 var z_lookAt = z_Coordinate;
 
+//Cube Vertices;
+V1 = new Vector3();
+V2 = new Vector3();
+V3 = new Vector3();
+V4 = new Vector3();
+V5 = new Vector3();
+V6 = new Vector3();
+V7 = new Vector3();
+V8 = new Vector3();
+
 // Our first global particle system object; contains 'state variables' s1,s2;
 //---------------------------------------------------------
 var g_partA = new PartSys();   // create our first particle-system object;
 							  // for code, see PartSys.js
 
-var ground = new groundVBO();	
+var ground = new groundVBO();
+buildCube(1.0,0.0,0.0,0.0)
+cube = new cubeVBO();	
 
 
 function main() {
@@ -137,6 +149,8 @@ function main() {
 
   //worldBox.init(gl);
   ground.init();
+  cube.init()
+
   
   g_partA.initBouncy2D(100);        // create a 2D bouncy-ball system where
                                     // 2 particles bounce within -0.9 <=x,y<0.9
@@ -229,6 +243,11 @@ function drawAll() {
     ground.switchToMe();
 	ground.adjust();
 	ground.render();
+
+	cube.switchToMe();
+	cube.adjust();
+	cube.render();
+
 	g_partA.switchToMe();  
 	g_partA.applyForces(g_partA.s1, g_partA.forceList);  // find current net force on each particle
     g_partA.dotFinder(g_partA.s1dot, g_partA.s1); // find time-derivative s1dot from s1;
@@ -656,4 +675,15 @@ function setCamera() {
     //------------END COPY
     
     }
+
+function buildCube(width,offset_x,offset_y,offset_z){
+	V1 = new Vector3([width + offset_x, width + offset_y, width + offset_z]);
+	V2 = new Vector3([width + offset_x, -width + offset_y, width + offset_z]);
+	V3 = new Vector3([width + offset_x, -width + offset_y, -width + offset_z]);
+	V4 = new Vector3([width + offset_x, width + offset_y, -width + offset_z]);
+	V5 = new Vector3([-width + offset_x, width + offset_y, -width + offset_z]);
+	V6 = new Vector3([-width + offset_x, width + offset_y, width + offset_z]);
+	V7 = new Vector3([-width + offset_x, -width + offset_y, width + offset_z]);
+	V8 = new Vector3([-width + offset_x, -width + offset_y, -width + offset_z]);
+}
 
