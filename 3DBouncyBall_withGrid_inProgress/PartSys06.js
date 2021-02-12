@@ -84,6 +84,7 @@ const PART_DIAM 	  =14;	// on-screen diameter (in pixels)
 const PART_RENDMODE =15;	// on-screen appearance (square, round, or soft-round)
  // Other useful particle values, currently unused
 const PART_AGE      =16;  // # of frame-times until re-initializing (Reeves Fire)
+const PART_SIZE     =17;
 /*
 const PART_CHARGE   =17;  // for electrostatic repulsion/attraction
 const PART_MASS_VEL =18;  // time-rate-of-change of mass.
@@ -95,7 +96,7 @@ const PART_R_FTOT   =23;  // force-accumulator for color-change: red
 const PART_G_FTOT   =24;  // force-accumulator for color-change: grn
 const PART_B_FTOT   =25;  // force-accumulator for color-change: blu
 */
-const PART_MAXVAR   =17;  // Size of array in CPart uses to store its values.
+const PART_MAXVAR   =18;  // Size of array in CPart uses to store its values.
 
 
 // Array-Name consts that select PartSys objects' numerical-integration solver:
@@ -168,8 +169,6 @@ this.VERT_SRC  =
 // supplied by 'attribute vec4' variable a_Position, filled from the 
 // Vertex Buffer Object (VBO) created in g_partA.init().
 
-//==============================================================================
-// Fragment shader program:
 this.FRAG_SRC =
   'precision mediump float;\n' +
   'varying vec4 v_Color; \n' +
@@ -182,7 +181,7 @@ this.FRAG_SRC =
 
   this.u_runModeID;							// GPU location for u_ModelMat uniform
   this.shaderLoc;
-  this.mvpMatrix = new Matrix4();
+  this.ModelMat = new Matrix4();
 //=============================================================================
 // Constructor for a new particle system.
   this.randX = 0;   // random point chosen by call to roundRand()
@@ -422,10 +421,10 @@ PartSys.prototype.initBouncy2D = function(count) {
   	console.log('PartSys.init() Failed to get u_runMode variable location');
   	return;
   }
-   // Get the storage location of u_MvpMatrix
-   this.u_MvpMatrix = gl.getUniformLocation(gl.program, 'u_MvpMatrix');
-   if (!this.u_MvpMatrix) { 
-     console.log('Failed to get the storage location of u_MvpMatrix');
+   // Get the storage location of u_ModelMat
+   this.u_ModelMat = gl.getUniformLocation(gl.program, 'u_ModelMat');
+   if (!this.u_ModelMat) { 
+     console.log('Failed to get the storage location of u_ModelMat');
      return;
    }
   
@@ -634,10 +633,10 @@ if(!this.u_runModeID) {
   console.log('PartSys.init() Failed to get u_runMode variable location');
   return;
 }
- // Get the storage location of u_MvpMatrix
- this.u_MvpMatrix = gl.getUniformLocation(gl.program, 'u_MvpMatrix');
- if (!this.u_MvpMatrix) { 
-   console.log('Failed to get the storage location of u_MvpMatrix');
+ // Get the storage location of u_ModelMat
+ this.u_ModelMat = gl.getUniformLocation(gl.program, 'u_ModelMat');
+ if (!this.u_ModelMat) { 
+   console.log('Failed to get the storage location of u_ModelMat');
    return;
  }
 
@@ -1306,16 +1305,16 @@ gl.uniform1i(this.u_runModeID, this.runMode);
 
 PartSys.prototype.adjust = function(){
   
-    this.mvpMatrix.setIdentity();
+    this.ModelMat.setIdentity();
 // THIS DOESN'T WORK!!  this.ModelMatrix = g_worldMat;
-    this.mvpMatrix.set(g_worldMat);	// use our global, shared camera.
+    this.ModelMat.set(g_worldMat);	// use our global, shared camera.
 // READY to draw in 'world' coord axes.
 	
 //  this.ModelMat.rotate(g_angleNow0, 0, 0, 1);	  // rotate drawing axes,
 //  this.ModelMat.translate(0.35, 0, 0);							// then translate them.
 //  Transfer new uniforms' values to the GPU:-------------
 // Send  new 'ModelMat' values to the GPU's 'u_ModelMat1' uniform: 
-gl.uniformMatrix4fv(this.u_MvpMatrix, false, this.mvpMatrix.elements);
+gl.uniformMatrix4fv(this.u_ModelMat, false, this.ModelMat.elements);
 // Adjust the attributes' stride and offset (if necessary)
 // (use gl.vertexAttribPointer() calls and gl.enableVertexAttribArray() calls)
 }

@@ -373,7 +373,7 @@
     '}                                      \n';
 
     drawCube();
-    console.log(cubeVerts)
+    //console.log(cubeVerts)
     this.vboContents = cubeVerts;
     this.vboVerts = cubeVerts.length / 7;
 
@@ -533,7 +533,7 @@
   gl.drawArrays(gl.LINES,
       0,
       this.vboVerts);
-  console.log(this.vboVerts)
+  //console.log(this.vboVerts)
   }
 
   cubeVBO.prototype.reload = function(){
@@ -542,3 +542,4 @@
         // begins in the VBO.
         this.vboContents);   // the JS source-data array used to fill VBO
   }
+

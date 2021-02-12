@@ -70,7 +70,7 @@ V8 = new Vector3();
 
 // Our first global particle system object; contains 'state variables' s1,s2;
 //---------------------------------------------------------
-var g_partA = new PartSys();   // create our first particle-system object;
+var g_partA = new VBOPartSys();   // create our first particle-system object;
 							  // for code, see PartSys.js
 
 var ground = new groundVBO();
@@ -150,13 +150,12 @@ function main() {
   //worldBox.init(gl);
   ground.init();
   cube.init()
-
-  
-  g_partA.initBouncy2D(100);        // create a 2D bouncy-ball system where
+  g_partA.initBouncy3D(100);        // create a 2D bouncy-ball system where
                                     // 2 particles bounce within -0.9 <=x,y<0.9
 									// and z=0.
+  g_partA.vboInit()
 
-  printControls(); 	// Display (initial) particle system values as text on webpage
+ // printControls(); 	// Display (initial) particle system values as text on webpage
  
   // Quick tutorial on synchronous, real-time animation in JavaScript/HTML-5: 
   //  	http://creativejs.com/resources/requestanimationframe/
@@ -248,13 +247,14 @@ function drawAll() {
 	cube.adjust();
 	cube.render();
 
-	g_partA.switchToMe();  
+	g_partA.switchToMe();
+	g_partA.adjust();  
 	g_partA.applyForces(g_partA.s1, g_partA.forceList);  // find current net force on each particle
     g_partA.dotFinder(g_partA.s1dot, g_partA.s1); // find time-derivative s1dot from s1;
     g_partA.solver();         // find s2 from s1 & related states.
     g_partA.doConstraints();  // Apply all constraints.  s2 is ready!
 	
-	g_partA.adjust(); 
+	 
 	g_partA.render();         // transfer current state to VBO, set uniforms, draw it!
 	g_partA.swap();           // Make s2 the new current state s1.s
 	//worldBox.switchToMe();  // Set WebGL to render from this VBObox.

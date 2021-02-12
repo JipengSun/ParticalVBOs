@@ -13,10 +13,11 @@ const PART_R        =10;  // color : red,green,blue, alpha (opacity); 0<=RGBA<=1
 const PART_G        =11;  
 const PART_B        =12;
 const PART_MASS     =13;  	// mass, in kilograms
-const PART_DIAM 	  =14;	// on-screen diameter (in pixels)
+const PART_DIAM 	=14;	// on-screen diameter (in pixels)
 const PART_RENDMODE =15;	// on-screen appearance (square, round, or soft-round)
  // Other useful particle values, currently unused
 const PART_AGE      =16;  // # of frame-times until re-initializing (Reeves Fire)
+const PART_SIZE     =17
 /*
 const PART_CHARGE   =17;  // for electrostatic repulsion/attraction
 const PART_MASS_VEL =18;  // time-rate-of-change of mass.
@@ -28,7 +29,7 @@ const PART_R_FTOT   =23;  // force-accumulator for color-change: red
 const PART_G_FTOT   =24;  // force-accumulator for color-change: grn
 const PART_B_FTOT   =25;  // force-accumulator for color-change: blu
 */
-const PART_MAXVAR   =17;  // Size of array in CPart uses to store its values.
+const PART_MAXVAR   =18;  // Size of array in CPart uses to store its values.
 
 
 // Array-Name consts that select PartSys objects' numerical-integration solver:
@@ -72,39 +73,39 @@ const NU_EPSILON  = 10E-15;         // a tiny amount; a minimum vector length
 //==============================================================================
 
 function VBOPartSys(){
-  this.VERT_SRC = 
+ 
+  this.VERT_SRC =
   ' precision mediump float;                 \n' + // req'd in OpenGL ES if we use 'float'
   ' uniform    int u_runMode;                \n' + // particle system state: // 0=reset; 1= pause; 2=step; 3=run
-  																				
   ' attribute vec4 a_Position;               \n' +
-  'uniform mat4 u_ModelMatrix;\n' +
+  ' uniform   mat4 u_ModelMat;               \n' +
   ' varying   vec4 v_Color;                  \n' +
-  'void main() {\n' +
-  '  gl_PointSize = 20.0;\n' +            // TRY MAKING THIS LARGER...
-  '	 gl_Position = u_ModelMatrix* a_Position; \n' +	
-	// Let u_runMode determine particle color:
-  '  if(u_runMode == 0) { \n' +
-	'	   v_Color = vec4(1.0, 0.0, 0.0, 1.0);	\n' +		// red: 0==reset
-	'  	 } \n' +
-	'  else if(u_runMode == 1) {  \n' +
-	'    v_Color = vec4(1.0, 1.0, 0.0, 1.0); \n' +	// yellow: 1==pause
-	'    }  \n' +
-	'  else if(u_runMode == 2) { \n' +    
-	'    v_Color = vec4(1.0, 1.0, 1.0, 1.0); \n' +	// white: 2==step
-  '    } \n' +
-	'  else { \n' +
-	'    v_Color = vec4(0.2, 1.0, 0.2, 1.0); \n' +	// green: >=3 ==run
-	'		 } \n' +
-  '} \n';
-  this.FRAG_SRC = 
-  'precision mediump float;\n' +
-  'varying vec4 v_Color; \n' +
-  'void main() {\n' +
-  '  float dist = distance(gl_PointCoord, vec2(0.5, 0.5)); \n' +
-  '  if(dist < 0.5) { \n' +	
-	'  	gl_FragColor = vec4((1.0-2.0*dist)*v_Color.rgb, 1.0);\n' +
-	'  } else { discard; }\n' +
-  '}\n';
+  ' void main() {                            \n' +
+  '   gl_PointSize = 20.0;                 \n' +// TRY MAKING THIS LARGER...
+  '   gl_Position = u_ModelMat * a_Position; \n' +  
+  '   if(u_runMode == 0) {                   \n' +
+  '     v_Color = vec4(1.0, 0.0, 0.0, 1.0);  \n' +   // red: 0==reset
+  '     }                                    \n' +
+  '   else if(u_runMode == 1) {              \n' +
+  '     v_Color = vec4(1.0, 1.0, 0.0, 1.0);  \n' +  // yellow: 1==pause
+  '     }                                    \n' +
+  '   else if(u_runMode == 2) {              \n' +    
+  '     v_Color = vec4(1.0, 1.0, 1.0, 1.0);  \n' +  // white: 2==step
+  '     }                                    \n' +
+  '   else {                                 \n' +
+  '     v_Color = vec4(0.2, 1.0, 0.2, 1.0);        \n' +  // green: >=3 ==run
+  '     }                                    \n' +
+  ' }                                        \n' ;
+
+this.FRAG_SRC =
+  'precision mediump float;                                 \n' +
+  'varying vec4 v_Color;                                    \n' +
+  'void main() {                                            \n' +
+  '  float dist = distance(gl_PointCoord, vec2(0.5, 0.5));  \n' +
+  '  if(dist < 0.5) {                                       \n' + 
+  '   gl_FragColor = vec4((1.0-2.0*dist)*v_Color.rgb, 1.0); \n' +
+  '  } else { discard; }                                    \n' +
+  '}                                                        \n' ;       
   this.randX = 0;   // random point chosen by call to roundRand()
   this.randY = 0;
   this.randZ = 0;
@@ -158,12 +159,13 @@ VBOPartSys.prototype.initBouncy3D = function(count) {
     this.s1dot = new Float32Array(this.partCount * PART_MAXVAR)
 
 // Create & init all force-causing objects------------------------------------
-    var fTmp = new CForcer();
+    fTmp = new CForcer();
     fTmp.forceType = F_GRAV_E;      
     fTmp.targFirst = 0;             
     fTmp.targCount = -1;            
     this.forceList.push(fTmp);
 
+    fTmp = new CForcer();          
     fTmp.forceType = F_DRAG;
     fTmp.Kdrag = 0.15;              
     fTmp.targFirst = 0;             
@@ -211,8 +213,8 @@ VBOPartSys.prototype.initBouncy3D = function(count) {
                                             // its x velocity xvel will change to -xvel * resti ).
                                             
     //--------------------------init Particle System Controls:
-    this.runMode =  3;// Master Control: 0=reset; 1= pause; 2=step; 3=run
-    this.solvType = SOLV_OLDGOOD;// adjust by s/S keys.
+    this.runMode =  2;// Master Control: 0=reset; 1= pause; 2=step; 3=run
+    this.solvType = SOLV_EULER;// adjust by s/S keys.
                         // SOLV_EULER (explicit, forward-time, as 
                                             // found in BouncyBall03.01BAD and BouncyBall04.01badMKS)
                                             // SOLV_OLDGOOD for special-case implicit solver, reverse-time, 
@@ -227,8 +229,8 @@ VBOPartSys.prototype.initBouncy3D = function(count) {
     var j = 0;
     for (var i = 0; i < this.partCount; i += 1, j += PART_MAXVAR){
         this.roundRand();
-        this.s1[j + PART_XPOS] = -0.8 + 0.1 * this.randX;
-        this.s1[j + PART_YPOS] = -0.8 + 0.1 * this.randY;
+        this.s1[j + PART_XPOS] = -0.5 + 0.1 * this.randX;
+        this.s1[j + PART_YPOS] = -0.5 + 0.1 * this.randY;
         this.s1[j + PART_ZPOS] = -0.8 + 0.1 * this.randZ;
         this.s1[j + PART_WPOS] =  1.0;
         this.roundRand();
@@ -239,6 +241,7 @@ VBOPartSys.prototype.initBouncy3D = function(count) {
         this.s1[j + PART_DIAM] =  2.0 + 10*Math.random();
         this.s1[j + PART_RENDMODE] = 0.0;
         this.s1[j + PART_AGE] = 30 + 100*Math.random();
+        this.s1[j + PART_SIZE] = 20.0;
         
         this.s2.set(this.s1);
     }
@@ -269,21 +272,27 @@ VBOPartSys.prototype.applyForces = function(s,fList){
         // Begin by presuming targCount < 0;
         var m = fList[k].targFirst;
         var mmax = this.partCount;
+        console.log(fList[k].targCount)
+
         if(fList[k].targCount ==0){
             m=mmax=0;
         }
         else if(fList[k].targCount > 0){
             var tmp = fList[k].targCount;
             if(tmp<mmax) mmax = tmp;
-            else console.log("\n\n!!PartSys.applyForces() index error!!\n\n");
+            else console.log("\n\n!!PartSys.applyForces() index error!!\n\n");}
+
+
             switch(fList[k].forceType){
                 case F_MOUSE:
                     onsole.log("PartSys.applyForces(), fList[",k,"].forceType:", 
                                     fList[k].forceType, "NOT YET IMPLEMENTED!!");
                     break;
                 case F_GRAV_E:
+                    console.log(fList[k])
                     var j = m*PART_MAXVAR;
                     for(;m<mmax;m++,j+=PART_MAXVAR){
+                        console.log('XFORCE',s[j+PART_X_FTOT])
                         s[j+PART_X_FTOT] += s[j+PART_MASS] * fList[k].gravConst * fList[k].downDir.elements[0];
                         s[j+PART_Y_FTOT] += s[j+PART_MASS] * fList[k].gravConst * fList[k].downDir.elements[1];
                         s[j+PART_Z_FTOT] += s[j+PART_MASS] * fList[k].gravConst * fList[k].downDir.elements[2];
@@ -293,7 +302,7 @@ VBOPartSys.prototype.applyForces = function(s,fList){
                     console.log("PartSys.applyForces(), fList[",k,"].forceType:", 
                                             fList[k].forceType, "NOT YET IMPLEMENTED!!");
                     break;
-                case F_WIND:      // Blowing-wind-like force-field; fcn of 3D position
+                case F_WIND:      // Blowing-wind-like force-field; fcn of 3D position1
                     console.log("PartSys.applyForces(), fList[",k,"].forceType:", 
                                             fList[k].forceType, "NOT YET IMPLEMENTED!!");
                     break;
@@ -324,35 +333,36 @@ VBOPartSys.prototype.applyForces = function(s,fList){
                                             fList[k].forceType, "NOT YET IMPLEMENTED!!");
                     break;
                 default:
+                    console.log('aaaaaa',fList[k])
                     console.log("!!!ApplyForces() fList[",k,"] invalid forceType:", fList[k].forceType);
                     break;
             }
         }
     }
-}
 // s1dot contains the corresponding derivatives of the state variables.
 VBOPartSys.prototype.dotFinder = function(s1dot,s1){
     var invMass;
     var j = 0;
     for(var i = 0; i < this.partCount; i += 1, j += PART_MAXVAR){
-        s1dot[j + PART_XPOS] = s1[j + PART_XVEL];
-        s1dot[j + PART_YPOS] = s1[j + PART_YVEL];
-        s1dot[j + PART_ZPOS] = s1[j + PART_ZVEL];
-        s1dot[j + PART_WPOS] = 0.0;
-        invMass = 1.0 / s1[j + PART_MASS];
-        s1dot[j + PART_XVEL] = s1[j + PART_X_FTOT] * invMass;
-        s1dot[j + PART_YVEL] = s1[j + PART_Y_FTOT] * invMass;
-        s1dot[j + PART_ZVEL] = s1[j + PART_Z_FTOT] * invMass;
-        s1dot[j + PART_X_FTOT] = 0.0;
-        s1dot[j + PART_Y_FTOT] = 0.0;
-        s1dot[j + PART_Z_FTOT] = 0.0;
-        s1dot[j + PART_R] = 0.0;
-        s1dot[j + PART_G] = 0.0;
-        s1dot[j + PART_B] = 0.0;
-        s1dot[j + PART_MASS] = 0.0;
-        s1dot[j + PART_DIAM] = 0.0;
+        s1dot[j + PART_XPOS]     = s1[j + PART_XVEL];
+        s1dot[j + PART_YPOS]     = s1[j + PART_YVEL];
+        s1dot[j + PART_ZPOS]     = s1[j + PART_ZVEL];
+        s1dot[j + PART_WPOS]     = 0.0;
+        invMass                  = 1.0 / s1[j + PART_MASS];
+        s1dot[j + PART_XVEL]     = s1[j + PART_X_FTOT] * invMass;
+        s1dot[j + PART_YVEL]     = s1[j + PART_Y_FTOT] * invMass;
+        s1dot[j + PART_ZVEL]     = s1[j + PART_Z_FTOT] * invMass;
+        s1dot[j + PART_X_FTOT]   = 0.0;
+        s1dot[j + PART_Y_FTOT]   = 0.0;
+        s1dot[j + PART_Z_FTOT]   = 0.0;
+        s1dot[j + PART_R]        = 0.0;
+        s1dot[j + PART_G]        = 0.0;
+        s1dot[j + PART_B]        = 0.0;
+        s1dot[j + PART_MASS]     = 0.0;
+        s1dot[j + PART_DIAM]     = 0.0;
         s1dot[j + PART_RENDMODE] = 0.0;
-        s1dot[j + PART_AGE] = 0.0;
+        s1dot[j + PART_AGE]      = 0.0;
+        s1dot[j + PART_SIZE]     = 0.0;
     }
 }
 VBOPartSys.prototype.render = function(s){
@@ -386,7 +396,19 @@ VBOPartSys.prototype.solver = function(){
             }
         break;
         case SOLV_MIDPOINT:         // Midpoint Method (see lecture notes)
-            console.log('NOT YET IMPLEMENTED: this.solvType==' + this.solvType);
+            var sM = new Float32Array(this.partCount * PART_MAXVAR);
+            var sMdot = new Float32Array(this.partCount * PART_MAXVAR);
+
+            for (var n = 0; n < this.s1.length; n++) {
+                sM[n] = this.s1[n] + this.s1dot[n] * (g_timeStep * 0.001 * 0.5);
+            }
+
+            this.dotFinder(sMdot, sM);
+
+            for (var n = 0; n < this.s1.length; n++) {
+                this.s2[n] = this.s1[n] + sMdot[n] * (g_timeStep * 0.001)
+            }
+
         break;
         case SOLV_ADAMS_BASH:       // Adams-Bashforth Explicit Integrator
             console.log('NOT YET IMPLEMENTED: this.solvType==' + this.solvType);
@@ -395,10 +417,66 @@ VBOPartSys.prototype.solver = function(){
             console.log('NOT YET IMPLEMENTED: this.solvType==' + this.solvType);
         break;
         case SOLV_BACK_EULER:       // 'Backwind' or Implicit Euler
-            console.log('NOT YET IMPLEMENTED: this.solvType==' + this.solvType);
-        break;
+             var sErr = new Float32Array(this.partCount * PART_MAXVAR);
+             var s2Intermediate = new Float32Array(this.partCount * PART_MAXVAR);
+             var s2IntermediateDot = new Float32Array(this.partCount * PART_MAXVAR);
+
+             //First Calculate s2(0)
+             for (var n = 0; n < this.s1.length; n++) {
+                 s2Intermediate[n] = this.s1[n] + this.s1dot[n] * (g_timeStep * 0.001)
+             }
+
+             //Find the s2(0) dot
+             this.dotFinder(s2IntermediateDot, s2Intermediate);
+
+             //Calculate the Error
+             for (var n = 0; n < this.s1.length; n++) {
+                 sErr[n] = (s2IntermediateDot[n] - this.s1dot[n]) * g_timeStep * 0.001;
+             }
+
+             //Find the next timestep
+             for (var n = 0; n < this.s1.length; n++) {
+                 this.s2[n] = s2Intermediate[n] + sErr[n] * g_timeStep * 0.001;
+             }
+
+             break;
         case  SOLV_BACK_MIDPT:      // 'Backwind' or Implicit Midpoint
-            console.log('NOT YET IMPLEMENTED: this.solvType==' + this.solvType);
+            var sErr = new Float32Array(this.partCount * PART_MAXVAR);
+            var s2Intermediate = new Float32Array(this.partCount * PART_MAXVAR);
+            var s2IntermediateDot = new Float32Array(this.partCount * PART_MAXVAR);
+            var sM = new Float32Array(this.partCount * PART_MAXVAR);
+            var sMdot = new Float32Array(this.partCount * PART_MAXVAR);
+            var s3 = new Float32Array(this.partCount * PART_MAXVAR);
+
+            //First Calculate s2(0)
+            for (var n = 0; n < this.s1.length; n++) {
+                s2Intermediate[n] = this.s1[n] + this.s1dot[n] * (g_timeStep * 0.001)
+            }
+
+            //Find the s2(0) dot
+            this.dotFinder(s2IntermediateDot, s2Intermediate);
+
+            //Half-step with s2(0) derivative
+            for (var n = 0; n < s2Intermediate.length; n++) {
+                sM[n] = s2Intermediate[n] - s2IntermediateDot[n] * g_timeStep * 0.001 * 0.5;
+            }
+
+            //Fint the sMdot 
+            this.dotFinder(sMdot, sM);
+
+            for (var n = 0; n < s2Intermediate.length; n++) {
+                s3[n] = s2Intermediate[n] - sMdot[n] * g_timeStep * 0.001;
+            }
+
+            //Find the error
+            for (var n = 0; n < s2Intermediate.length; n++) {
+                sErr[n] = s3[n] - this.s1[n];
+            }
+
+            //Set the next TimeStep
+            for (var n = 0; n < s2Intermediate.length; n++) {
+                this.s2[n] = s2Intermediate[n] - (sErr[n] * 0.5);
+            }
         break;
         case SOLV_BACK_ADBASH:      // 'Backwind' or Implicit Adams-Bashforth
             console.log('NOT YET IMPLEMENTED: this.solvType==' + this.solvType);
@@ -452,6 +530,7 @@ if(this.bounceType==0){
 else if(this.bounceType == 1){
     var j = 0;
     for(var i = 0; i < this.partCount; i += 1, j+= PART_MAXVAR){
+        // Left wall
         if(this.s2[j + PART_XPOS] < -0.9){
             this.s2[j + PART_XPOS] = -0.9;
             this.s2[j + PART_XVEL] = this.s1[j + PART_XVEL];
@@ -461,6 +540,7 @@ else if(this.bounceType == 1){
             else
                 this.s2[j + PART_XVEL] = this.resti * this.s2[j + PART_XVEL];
         }
+        // Right wall
         else if(this.s2[j + PART_XPOS] > 0.9) { // && this.s2[j + PART_XVEL] > 0.0) {	
             // collision!
             this.s2[j + PART_XPOS] = 0.9; // 1) resolve contact: put particle at wall.
@@ -504,6 +584,7 @@ else if(this.bounceType == 1){
                 this.s2[j + PART_YVEL] = -this.resti * this.s2[j + PART_YVEL]; // need sign change--bounce!
             else 
                 this.s2[j + PART_YVEL] =  this.resti * this.s2[j + PART_YVEL];	// sign changed-- don't need another.
+          }
         //--------  near (-Z) wall  --------------------------------------------- 
   		if( this.s2[j + PART_ZPOS] < -0.9 ) { // && this.s2[j + PART_ZVEL] < 0.0 ) {
             // collision! 
@@ -536,7 +617,7 @@ else if(this.bounceType == 1){
             } // end of (+Z) wall constraint
     }
 }
-}
+
 else {
     console.log('?!?! unknown constraint: PartSys.bounceType==' + this.bounceType);
     return;
@@ -545,29 +626,30 @@ else {
 if(this.isFountain == 1)    // When particle age falls to zero, re-initialize
 // to re-launch from a randomized location with
 // a randomized velocity and randomized age.
-
-var j = 0;  // i==particle number; j==array index for i-th particle
-for(var i = 0; i < this.partCount; i += 1, j+= PART_MAXVAR) {
-    this.s2[j + PART_AGE] -= 1;     // decrement lifetime.
-    if(this.s2[j + PART_AGE] <= 0) { // End of life: RESET this particle!
-        this.roundRand();       // set this.randX,randY,randZ to random location in 
-        // a 3D unit sphere centered at the origin.
-        //all our bouncy-balls stay within a +/- 0.9 cube centered at origin; 
-        // set random positions in a 0.1-radius ball centered at (-0.8,-0.8,-0.8)
-        this.s2[j + PART_XPOS] = -0.0 + 0.2*this.randX; 
-        this.s2[j + PART_YPOS] = -0.4 + 0.2*this.randY;  
-        this.s2[j + PART_ZPOS] = -0.0 + 0.2*this.randZ;
-        this.s2[j + PART_WPOS] =  1.0;      // position 'w' coordinate;
-        this.roundRand(); // Now choose random initial velocities too:
-        this.s2[j + PART_XVEL] =  this.INIT_VEL*(0.0 + 0.2*this.randX);
-        this.s2[j + PART_YVEL] =  this.INIT_VEL*(0.5 + 0.2*this.randY);
-        this.s2[j + PART_ZVEL] =  this.INIT_VEL*(0.0 + 0.2*this.randZ);
-        this.s2[j + PART_MASS] =  1.0;      // mass, in kg.
-        this.s2[j + PART_DIAM] =  2.0 + 10*Math.random(); // on-screen diameter, in pixels
-        this.s2[j + PART_RENDMODE] = 0.0;
-        this.s2[j + PART_AGE] = 30 + 100*Math.random();
-    } // if age <=0
-} // for loop thru all particles
+    {
+        var j = 0;  // i==particle number; j==array index for i-th particle
+        for(var i = 0; i < this.partCount; i += 1, j+= PART_MAXVAR) {
+            this.s2[j + PART_AGE] -= 1;     // decrement lifetime.
+            if(this.s2[j + PART_AGE] <= 0) { // End of life: RESET this particle!
+                this.roundRand();       // set this.randX,randY,randZ to random location in 
+                // a 3D unit sphere centered at the origin.
+                //all our bouncy-balls stay within a +/- 0.9 cube centered at origin; 
+                // set random positions in a 0.1-radius ball centered at (-0.8,-0.8,-0.8)
+                this.s2[j + PART_XPOS] = -0.0 + 0.2*this.randX; 
+                this.s2[j + PART_YPOS] = -0.4 + 0.2*this.randY;  
+                this.s2[j + PART_ZPOS] = -0.0 + 0.2*this.randZ;
+                this.s2[j + PART_WPOS] =  1.0;      // position 'w' coordinate;
+                this.roundRand(); // Now choose random initial velocities too:
+                this.s2[j + PART_XVEL] =  this.INIT_VEL*(0.0 + 0.2*this.randX);
+                this.s2[j + PART_YVEL] =  this.INIT_VEL*(0.5 + 0.2*this.randY);
+                this.s2[j + PART_ZVEL] =  this.INIT_VEL*(0.0 + 0.2*this.randZ);
+                this.s2[j + PART_MASS] =  1.0;      // mass, in kg.
+                this.s2[j + PART_DIAM] =  2.0 + 10*Math.random(); // on-screen diameter, in pixels
+                this.s2[j + PART_RENDMODE] = 0.0;
+                this.s2[j + PART_AGE] = 30 + 100*Math.random();
+            } // if age <=0
+        } // for loop thru all particles
+    }
 }
 
 VBOPartSys.prototype.swap = function(){
@@ -605,7 +687,7 @@ VBOPartSys.prototype.vboInit = function(){
                                 '.init() Failed to get GPU location of attribute a_PosLoc');
         return -1;	// error exit.
       }
-    this.u_ModelMatLoc = gl.getUniformLocation(this.shaderLoc, 'u_ModelMatrix');
+    this.u_ModelMatLoc = gl.getUniformLocation(this.shaderLoc, 'u_ModelMat');
     if (!this.u_ModelMatLoc) { 
         console.log(this.constructor.name + 
     						'.init() failed to get GPU location for u_ModelMatrix uniform');
