@@ -117,7 +117,10 @@ const LIM_RADIUS  =14;    // Prevent any particle in a set (targFirst,targCount)
                           // hard solid spheres that can't pass thru each other.
 const LIM_PULLEY  =15;    // Keep constant sum-of-distances for 3 particles
                           // A,B,Pivot:  ||A-Pivot||+||B-Pivot|| = dmax.
-const LIM_MAXVAR  =16;    // Max number of possible limitType values available.
+
+const LIM_ZERO    =16;
+
+const LIM_MAXVAR  =17;    // Max number of possible limitType values available.
 
 //=============================================================================
 //==============================================================================
@@ -155,6 +158,8 @@ function CLimit() {
                                   // axes to 'pose' axes where we define 'wall'
                                   // and other non-axis-aligned constraints.
   this.radius = 1.0;        // hard/solid particle size imposed by by LIM_RADIUS
+
+  this.minvel = 0.3;
 }
 
 CLimit.prototype.printMe = function(opt_src) {

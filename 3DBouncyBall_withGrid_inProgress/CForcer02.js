@@ -6,18 +6,18 @@
 
 ================================================================================
 ================================================================================
-  Each object of type 'CForcer' fully describe just one force-causing entity in 
-our particle system (e.g. gravity, drag, wind force, a spring, a boid force, 
+  Each object of type 'CForcer' fully describe just one force-causing entity in
+our particle system (e.g. gravity, drag, wind force, a spring, a boid force,
 electrical charge, interactive user input, etc), and we make an array of these
-objects inside each particle-system object (e.g. PartSys.forceList[]) and use 
-only the CForcer objects in that array in the 'PartSys.applyForces()' function.  
-  Each 'CForcer' object contains a 'forceType' member variable whose value 
+objects inside each particle-system object (e.g. PartSys.forceList[]) and use
+only the CForcer objects in that array in the 'PartSys.applyForces()' function.
+  Each 'CForcer' object contains a 'forceType' member variable whose value
 selects the kind of force that the object describes, where: */
 // ---------------forceType values----------------
 const F_NONE      = 0;      // Non-existent force: ignore this CForcer object
         // NOTE: any forceType value < 0 causes LIM_NONE result; THUS you can
         //      ***negate forceType*** to temporarily disable a CForcer object.
-        //      (quite useful for debugging  and for novel user controls...)   
+        //      (quite useful for debugging  and for novel user controls...)
 const F_MOUSE     = 1;      // Spring-like connection to the mouse cursor; lets
                             // you 'grab' and 'wiggle' one or more particles.
 const F_GRAV_E    = 2;      // Earth-gravity: pulls all particles 'downward'.
@@ -32,17 +32,18 @@ const F_SPRINGSET = 8;      // a big collection of identical springs; lets you
                             // make cloth & rubbery shapes as one force-making
                             // object, instead of many many F_SPRING objects.
 const F_CHARGE    = 9;      // attract/repel by charge and inverse distance.
-const F_MAXKINDS  =10;      // 'max' is always the LAST name in our list;
+const F_FRIC      = 10;
+const F_MAXKINDS  = 11;      // 'max' is always the LAST name in our list;
                             // gives the total number of choices for forces.
 
-/* NOTE THAT different forceType values (e.g. gravity vs spring) will need 
-different parameters inside CForcer to describe their forces.  For example, a 
-CForcer object for planetary gravity will need a gravitational constant 'grav'; 
-a CForcer object for a spring will need a spring constant, damping constant, and 
-the state-variable index of the 2 particles it connects, and so forth.  
+/* NOTE THAT different forceType values (e.g. gravity vs spring) will need
+different parameters inside CForcer to describe their forces.  For example, a
+CForcer object for planetary gravity will need a gravitational constant 'grav';
+a CForcer object for a spring will need a spring constant, damping constant, and
+the state-variable index of the 2 particles it connects, and so forth.
 For simplicity, we don't 'customize' CForcer objects with different member vars;
-instead, each CForcer each contains all the member variables needed for any 
-possible forceType value, but we simply ignore the member vars we don't need. 
+instead, each CForcer each contains all the member variables needed for any
+possible forceType value, but we simply ignore the member vars we don't need.
 */
 //=============================================================================
 //==============================================================================
@@ -55,12 +56,12 @@ function CForcer() {
   this.targFirst = 0;       // particle-number (count from 0 in state variable)
                             // of the first particle affected by this CForcer;
   this.targCount = -1;      // Number of sequential particles in state variable
-                            // affected by this CForcer object. To select ALL 
+                            // affected by this CForcer object. To select ALL
                             // particles from 'targFirst' on, set targCount < 0.
                             // For springs, set targCount=0 & use e1,e2 below.
-                                                  
+
     // F_GRAV_E  Earth Gravity variables........................................
-  this.gravConst = 9.832;   // gravity's acceleration(meter/sec^2); 
+  this.gravConst = 9.832;   // gravity's acceleration(meter/sec^2);
 	                          // on Earth surface, value is 9.832 meters/sec^2.
   this.downDir = new Vector4([0,0,-1,1]); // 'down' direction vector for gravity.
 
@@ -91,6 +92,8 @@ function CForcer() {
                             // how fast the spring length is changing, and
                             // applied along the direction of the spring.
   this.K_restLength;         // the zero-force length of this spring.
+  
+  this.d_fric;
 }
 
 CForcer.prototype.printMe = function(opt_src) {
@@ -100,9 +103,9 @@ CForcer.prototype.printMe = function(opt_src) {
     console.log("------------CForcer ", name, ":----------");
     }
   else {
-    console.log("------------CForcer Contents:----------");  
+    console.log("------------CForcer Contents:----------");
     }
-        
+
   console.log("targFirst:", this.targFirst, "targCount:", this.targCount);
   var tmp = this.forceType;
   if(tmp < 0) {
@@ -116,7 +119,7 @@ CForcer.prototype.printMe = function(opt_src) {
   case F_MOUSE:
     console.log("forceType: F_MOUSE");
     break;
-  case F_GRAV_E: 
+  case F_GRAV_E:
     console.log("forceType: F_GRAV_E. gravConst:", this.gravConst);
     this.downDir.printMe("downDir vector:");
     break;
@@ -128,7 +131,7 @@ CForcer.prototype.printMe = function(opt_src) {
   case F_WIND:
     console.log("forceType: F_WIND.");
     break;
-  case F_BUBBLE: 
+  case F_BUBBLE:
     console.log("forceType: F_BUBBLE. bub_radius:", this.bub_radius,
                 "bub_force:", this.bub_force);
     this.bub_ctr.printMe("bub_ctr:");
@@ -140,14 +143,14 @@ CForcer.prototype.printMe = function(opt_src) {
   case F_SPRING:
     console.log("forceType: F_SPRING.");
     console.log("e1, e2 particle numbers:", this.e1, ", ", this.e2);
-    console.log("\tK_spring:", this.K_spring, 
+    console.log("\tK_spring:", this.K_spring,
                 "\tK_springDamp:", this.K_springDamp,
                 "\tK_restLength:", this.K_restLength);
     break;
   case F_SPRINGSET:
     console.log("forceType: F_SPRINGSET.");
     break;
-  case F_CHARGE: 
+  case F_CHARGE:
   console.log("forceType: F_CHARGE.");
     break;
   default:
