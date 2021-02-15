@@ -308,50 +308,7 @@
 
   }
 
-
-  function drawCube(){
-    cubeVerts = new Float32Array(
-      [
-        V1.elements[0], V1.elements[1], V1.elements[2], 1.0, 1.0, 1.0, 1.0,         
-        V2.elements[0], V2.elements[1], V2.elements[2], 1.0, 1.0, 1.0, 1.0,         
-
-        V2.elements[0], V2.elements[1], V2.elements[2], 1.0, 1.0, 1.0, 1.0,         
-        V3.elements[0], V3.elements[1], V3.elements[2], 1.0, 1.0, 1.0, 1.0,         
-
-        V3.elements[0], V3.elements[1], V3.elements[2], 1.0, 1.0, 1.0, 1.0,         
-        V4.elements[0], V4.elements[1], V4.elements[2], 1.0, 1.0, 1.0, 1.0,         
-
-        V4.elements[0], V4.elements[1], V4.elements[2], 1.0, 1.0, 1.0, 1.0,         
-        V1.elements[0], V1.elements[1], V1.elements[2], 1.0, 1.0, 1.0, 1.0,
-
-
-        V4.elements[0], V4.elements[1], V4.elements[2], 1.0, 1.0, 1.0, 1.0,         
-        V5.elements[0], V5.elements[1], V5.elements[2], 1.0, 1.0, 1.0, 1.0,         
-
-        V5.elements[0], V5.elements[1], V5.elements[2], 1.0, 1.0, 1.0, 1.0,         
-        V6.elements[0], V6.elements[1], V6.elements[2], 1.0, 1.0, 1.0, 1.0,         
-
-        V6.elements[0], V6.elements[1], V6.elements[2], 1.0, 1.0, 1.0, 1.0,         
-        V7.elements[0], V7.elements[1], V7.elements[2], 1.0, 1.0, 1.0, 1.0,         
-
-        V7.elements[0], V7.elements[1], V7.elements[2], 1.0, 1.0, 1.0, 1.0,         
-        V8.elements[0], V8.elements[1], V8.elements[2], 1.0, 1.0, 1.0, 1.0,         
-
-        V8.elements[0], V8.elements[1], V8.elements[2], 1.0, 1.0, 1.0, 1.0,         
-        V5.elements[0], V5.elements[1], V5.elements[2], 1.0, 1.0, 1.0, 1.0,         
-
-        V8.elements[0], V8.elements[1], V8.elements[2], 1.0, 1.0, 1.0, 1.0,         
-        V3.elements[0], V3.elements[1], V3.elements[2], 1.0, 1.0, 1.0, 1.0,         
-
-        V7.elements[0], V7.elements[1], V7.elements[2], 1.0, 1.0, 1.0, 1.0,         
-        V2.elements[0], V2.elements[1], V2.elements[2], 1.0, 1.0, 1.0, 1.0,         
-
-        V6.elements[0], V6.elements[1], V6.elements[2], 1.0, 1.0, 1.0, 1.0,         
-        V1.elements[0], V1.elements[1], V1.elements[2], 1.0, 1.0, 1.0, 1.0
-      ]
-    );
-  }
-  function cubeVBO(){
+  function cubeVBO(width,offset_x,offset_y,offset_z){
     this.VERT_SRC = //--------------------- VERTEX SHADER source code 
     'precision highp float;                 \n' +        // req'd in OpenGL ES if we use 'float'
     //
@@ -372,10 +329,9 @@
     '  gl_FragColor = vec4(v_Colr0, 1.0);   \n' + 
     '}                                      \n';
 
-    drawCube();
-    //console.log(cubeVerts)
-    this.vboContents = cubeVerts;
-    this.vboVerts = cubeVerts.length / 7;
+    this.buildVertice(width,offset_x,offset_y,offset_z)
+    this.drawCube();
+    this.vboVerts = this.vboContents.length / 7;
 
     this.FSIZE = this.vboContents.BYTES_PER_ELEMENT;
     console.log("F_Size :: ", this.FSIZE);
@@ -420,7 +376,58 @@
     this.u_ModelMatLoc;             // GPU location for u_ModelMat uniform
 
   }
+  cubeVBO.prototype.buildVertice = function(width,offset_x,offset_y,offset_z){
+    this.V1 = new Vector3([width + offset_x, width + offset_y, width + offset_z]);
+    this.V2 = new Vector3([width + offset_x, -width + offset_y, width + offset_z]);
+    this.V3 = new Vector3([width + offset_x, -width + offset_y, -width + offset_z]);
+    this.V4 = new Vector3([width + offset_x, width + offset_y, -width + offset_z]);
+    this.V5 = new Vector3([-width + offset_x, width + offset_y, -width + offset_z]);
+    this.V6 = new Vector3([-width + offset_x, width + offset_y, width + offset_z]);
+    this.V7 = new Vector3([-width + offset_x, -width + offset_y, width + offset_z]);
+    this.V8 = new Vector3([-width + offset_x, -width + offset_y, -width + offset_z]);
+  }
+  cubeVBO.prototype.drawCube = function(){
+    this.vboContents = new Float32Array(
+      [
+        this.V1.elements[0], this.V1.elements[1], this.V1.elements[2], 1.0, 1.0, 1.0, 1.0,         
+        this.V2.elements[0], this.V2.elements[1], this.V2.elements[2], 1.0, 1.0, 1.0, 1.0,         
 
+        this.V2.elements[0], this.V2.elements[1], this.V2.elements[2], 1.0, 1.0, 1.0, 1.0,         
+        this.V3.elements[0], this.V3.elements[1], this.V3.elements[2], 1.0, 1.0, 1.0, 1.0,         
+
+        this.V3.elements[0], this.V3.elements[1], this.V3.elements[2], 1.0, 1.0, 1.0, 1.0,         
+        this.V4.elements[0], this.V4.elements[1], this.V4.elements[2], 1.0, 1.0, 1.0, 1.0,         
+
+        this.V4.elements[0], this.V4.elements[1], this.V4.elements[2], 1.0, 1.0, 1.0, 1.0,         
+        this.V1.elements[0], this.V1.elements[1], this.V1.elements[2], 1.0, 1.0, 1.0, 1.0,
+
+
+        this.V4.elements[0], this.V4.elements[1], this.V4.elements[2], 1.0, 1.0, 1.0, 1.0,         
+        this.V5.elements[0], this.V5.elements[1], this.V5.elements[2], 1.0, 1.0, 1.0, 1.0,         
+
+        this.V5.elements[0], this.V5.elements[1], this.V5.elements[2], 1.0, 1.0, 1.0, 1.0,         
+        this.V6.elements[0], this.V6.elements[1], this.V6.elements[2], 1.0, 1.0, 1.0, 1.0,         
+
+        this.V6.elements[0], this.V6.elements[1], this.V6.elements[2], 1.0, 1.0, 1.0, 1.0,         
+        this.V7.elements[0], this.V7.elements[1], this.V7.elements[2], 1.0, 1.0, 1.0, 1.0,         
+
+        this.V7.elements[0], this.V7.elements[1], this.V7.elements[2], 1.0, 1.0, 1.0, 1.0,         
+        this.V8.elements[0], this.V8.elements[1], this.V8.elements[2], 1.0, 1.0, 1.0, 1.0,         
+
+        this.V8.elements[0], this.V8.elements[1], this.V8.elements[2], 1.0, 1.0, 1.0, 1.0,         
+        this.V5.elements[0], this.V5.elements[1], this.V5.elements[2], 1.0, 1.0, 1.0, 1.0,         
+
+        this.V8.elements[0], this.V8.elements[1], this.V8.elements[2], 1.0, 1.0, 1.0, 1.0,         
+        this.V3.elements[0], this.V3.elements[1], this.V3.elements[2], 1.0, 1.0, 1.0, 1.0,         
+
+        this.V7.elements[0], this.V7.elements[1], this.V7.elements[2], 1.0, 1.0, 1.0, 1.0,         
+        this.V2.elements[0], this.V2.elements[1], this.V2.elements[2], 1.0, 1.0, 1.0, 1.0,         
+
+        this.V6.elements[0], this.V6.elements[1], this.V6.elements[2], 1.0, 1.0, 1.0, 1.0,         
+        this.V1.elements[0], this.V1.elements[1], this.V1.elements[2], 1.0, 1.0, 1.0, 1.0
+      ]
+    );
+  }
   cubeVBO.prototype.init = function(){
     this.shaderLoc = createProgram(gl, this.VERT_SRC, this.FRAG_SRC);
     if (!this.shaderLoc) {

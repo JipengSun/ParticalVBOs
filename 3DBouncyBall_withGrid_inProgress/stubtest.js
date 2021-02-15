@@ -25,7 +25,7 @@ var g_timeStepMax = g_timeStep;
 
 var g_worldMat = new Matrix4();
 var current_rotation = 0;
-var x_Coordinate = -8;
+var x_Coordinate = -18;
 var y_Coordinate = 0;
 var z_Coordinate = 0.5;
 var x_lookAt = 0;
@@ -40,22 +40,12 @@ var g_angleRate = 10.0;
 var lookAtVector = new Vector3([x_lookAt, y_lookAt, z_lookAt]);
 var eyePosVector = new Vector3([x_Coordinate, y_Coordinate, z_Coordinate]);
 
-//Cube Vertices;
-V1 = new Vector3();
-V2 = new Vector3();
-V3 = new Vector3();
-V4 = new Vector3();
-V5 = new Vector3();
-V6 = new Vector3();
-V7 = new Vector3();
-V8 = new Vector3();
-
 
 bouncyball = new VBOPartSys();
+springpair = new VBOPartSys();
 ground = new groundVBO();
-buildCube(1.0,0.0,0.0,0.0)
-cube = new cubeVBO();
-
+cubeBouncyBall = new cubeVBO(1.0,0.0,0.0,0.0);
+cubeSpringPair = new cubeVBO(1.0,0.0,3.0,0.0);
 function main(){
     g_canvas = document.getElementById('webgl');
     gl = g_canvas.getContext('webgl',{preserveDrawingBuffer: true})
@@ -77,9 +67,12 @@ function main(){
     gl.enable(gl.DEPTH_TEST);
 
     ground.init();
-    cube.init();
-    bouncyball.initBouncy3D(2);
+    cubeBouncyBall.init();
+    cubeSpringPair.init();
+    bouncyball.initBouncy3D(2,0.0,0.0,0.0);
     bouncyball.vboInit();
+    springpair.initSpringPair(2,0.0,3.0,0.0);
+    springpair.vboInit();
 
     var tick = function() {
         g_timeStep = animate();
@@ -113,8 +106,8 @@ function animate() {
       g_stepCount = (g_stepCount +1)%1000;		// count 0,1,2,...999,0,1,2,...
       //-----------------------end instrumentation
 
-        if (updateRotAngle == true) {
-            g_rotAngle += g_angleRate * updateRotAngleSign * g_timeStep * 0.001;
+      if (updateRotAngle == true) {
+        g_rotAngle += g_angleRate * updateRotAngleSign * g_timeStep * 0.001;
       }
 
 
@@ -133,34 +126,55 @@ function drawAll(){
         ground.adjust();
         ground.render();
 
-        cube.switchToMe();
-        cube.adjust();
-        cube.render();
+        cubeBouncyBall.switchToMe();
+        cubeBouncyBall.adjust();
+        cubeBouncyBall.render();
+
+        cubeSpringPair.switchToMe();
+        cubeSpringPair.adjust();
+        cubeSpringPair.render();
 
         bouncyball.switchToMe();
         bouncyball.adjust();
         bouncyball.applyForces(bouncyball.s1,bouncyball.forceList);
-        //console.log(bouncyball.forceList)
         bouncyball.dotFinder(bouncyball.s1dot, bouncyball.s1);
         bouncyball.solver();
-        //console.log(bouncyball.s1[PART_YVEL],bouncyball.s1[PART_Y_FTOT])
-        //console.log(bouncyball.s2[PART_YVEL],bouncyball.s2[PART_Y_FTOT])
         bouncyball.doConstraints(bouncyball.s1,bouncyball.s2,bouncyball.limitList);
-
         bouncyball.render();
         bouncyball.swap();
+
+        springpair.switchToMe();
+        springpair.adjust();
+        springpair.applyForces(springpair.s1,springpair.forceList);
+        springpair.dotFinder(springpair.s1dot, springpair.s1);
+        springpair.solver();
+        springpair.doConstraints(springpair.s1,springpair.s2,springpair.limitList);
+        springpair.render();
+        springpair.swap();
+
+
     }
     else{
         ground.switchToMe();
         ground.adjust();
         ground.render();
-        cube.switchToMe();
-        cube.adjust();
-        cube.render();
+        
+        cubeBouncyBall.switchToMe();
+        cubeBouncyBall.adjust();
+        cubeBouncyBall.render();
+
+        cubeSpringPair.switchToMe();
+        cubeSpringPair.adjust();
+        cubeSpringPair.render();
 
         bouncyball.switchToMe()
         bouncyball.adjust()
         bouncyball.render()
+
+        springpair.switchToMe();
+        springpair.adjust();
+        springpair.render();
+
     }
 
 
@@ -184,20 +198,6 @@ function setCamera() {
     //------------END COPY
 
     }
-
-function buildCube(width,offset_x,offset_y,offset_z){
-	V1 = new Vector3([width + offset_x, width + offset_y, width + offset_z]);
-	V2 = new Vector3([width + offset_x, -width + offset_y, width + offset_z]);
-	V3 = new Vector3([width + offset_x, -width + offset_y, -width + offset_z]);
-	V4 = new Vector3([width + offset_x, width + offset_y, -width + offset_z]);
-	V5 = new Vector3([-width + offset_x, width + offset_y, -width + offset_z]);
-	V6 = new Vector3([-width + offset_x, width + offset_y, width + offset_z]);
-	V7 = new Vector3([-width + offset_x, -width + offset_y, width + offset_z]);
-	V8 = new Vector3([-width + offset_x, -width + offset_y, -width + offset_z]);
-}
-
-
-
 
 function MoveCameraLocation(sign, displacement) {
     x_Coordinate = x_Coordinate + sign * displacement[0] * g_timeStep * 0.001 * 15;
