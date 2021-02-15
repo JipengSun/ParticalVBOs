@@ -160,6 +160,8 @@ function CLimit() {
   this.radius = 1.0;        // hard/solid particle size imposed by by LIM_RADIUS
 
   this.minvel = 0.3;
+
+  this.anchorIndex;
 }
 
 CLimit.prototype.printMe = function(opt_src) {

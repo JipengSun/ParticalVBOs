@@ -159,6 +159,7 @@ VBOPartSys.prototype.initBouncy3D = function(count) {
     this.s1dot = new Float32Array(this.partCount * PART_MAXVAR)
 
 // Create & init all force-causing objects------------------------------------
+/*
     fTmp = new CForcer();
     fTmp.forceType = F_GRAV_E;
     fTmp.targFirst = 0;
@@ -177,6 +178,15 @@ VBOPartSys.prototype.initBouncy3D = function(count) {
     fTmp.d_fric = 0.01;
     fTmp.targFirst = 0;
     fTmp.targCount = -1;
+    this.forceList.push(fTmp);
+*/
+    fTmp = new CForcer();
+    fTmp.forceType = F_SPRING;
+    fTmp.e1 = 0;
+    fTmp.e2 = 1;
+    fTmp.K_spring = 10;
+    fTmp.K_springDamp = 0.5;
+    fTmp.K_restLength = 0.1;
     this.forceList.push(fTmp);
 
     console.log("PartSys.initBouncy3D() created PartSys.forceList[] array of ");
@@ -197,18 +207,28 @@ VBOPartSys.prototype.initBouncy3D = function(count) {
     cTmp.zMin = -0.9; cTmp.zMax = 0.9;
     cTmp.Kresti = 1.0;              // bouncyness: coeff. of restitution.
                                     // (and IGNORE all other CLimit members...)
-    this.limitList.push(cTmp);      // append this 'box' constraint object to the   // 'limitList' array of constraint-causing objects.
+    this.limitList.push(cTmp);      // append this 'box' constraint object to the 
+    
+    
     cTmp = new CLimit();
     cTmp.limitType = LIM_ZERO;
     cTmp.targFirst = 0;
     cTmp.partCount = -1;
     this.limitList.push(cTmp);
 
+
+    cTmp = new CLimit();
+    cTmp.limitType = LIM_ANCHOR;
+    cTmp.targFirst = 0;
+    cTmp.partCount = 0;
+    cTmp.archorIndex = 0;
+    this.limitList.push(cTmp);
+
     // Report:
     console.log("PartSys.initBouncy3D() created PartSys.limitList[] array of ");
     console.log("\t\t", this.limitList.length, "CLimit objects.");
 
-    this.INIT_VEL =  0.15 * 60.0;		// initial velocity in meters/sec.
+    this.INIT_VEL =  0//0.15 * 60.0;		// initial velocity in meters/sec.
 	                  // adjust by ++Start, --Start buttons. Original value
 										// was 0.15 meters per timestep; multiply by 60 to get
                     // meters per second.
@@ -226,7 +246,7 @@ VBOPartSys.prototype.initBouncy3D = function(count) {
 
     //--------------------------init Particle System Controls:
     this.runMode =  3;// Master Control: 0=reset; 1= pause; 2=step; 3=run
-    this.solvType = SOLV_MIDPOINT;// adjust by s/S keys.
+    this.solvType = SOLV_EULER;// adjust by s/S keys.
                         // SOLV_EULER (explicit, forward-time, as
                                             // found in BouncyBall03.01BAD and BouncyBall04.01badMKS)
                                             // SOLV_OLDGOOD for special-case implicit solver, reverse-time,
@@ -319,6 +339,7 @@ VBOPartSys.prototype.applyForces = function(s,fList){
                     break;
                 case F_BUBBLE:    // Constant inward force (bub_force)to a 3D centerpoint
                                 // bub_ctr if particle is > bub_radius away from it.
+                    
                     console.log("PartSys.applyForces(), fList[",k,"].forceType:",
                                             fList[k].forceType, "NOT YET IMPLEMENTED!!");
                     break;
@@ -334,8 +355,31 @@ VBOPartSys.prototype.applyForces = function(s,fList){
                     }
                     break;
                 case F_SPRING:
-                    console.log("PartSys.applyForces(), fList[",k,"].forceType:",
-                                                fList[k].forceType, "NOT YET IMPLEMENTED!!");
+                    // Calculate the distance
+                    var e1 = fList[k].e1;
+                    var e2 = fList[k].e2;
+                    //console.log(e1)
+                    var point1 = new Vector3([s[e1*PART_MAXVAR + PART_XPOS],s[e1*PART_MAXVAR + PART_YPOS],s[e1*PART_MAXVAR + PART_ZPOS]]);
+                    var point2 = new Vector3([s[e2*PART_MAXVAR + PART_XPOS],s[e2*PART_MAXVAR + PART_YPOS],s[e2*PART_MAXVAR + PART_ZPOS]]);
+                    res = pointsDist(point1,point2);
+                    sub = res[0];
+                    endDist = res[1];
+                    //console.log(res)
+                    //console.log(point2)
+                    //console.log(sub)
+                    console.log(endDist);
+                    var stretch = endDist - fList[k].K_restLength;
+                    var mag = stretch * fList[k].K_spring;
+                    normX = sub.elements[0] / (endDist + NU_EPSILON);
+                    normY = sub.elements[1] / (endDist + NU_EPSILON);
+                    normZ = sub.elements[2] / (endDist + NU_EPSILON);
+                    s[e1*PART_MAXVAR + PART_X_FTOT] -= mag * normX;
+                    s[e1*PART_MAXVAR + PART_Y_FTOT] -= mag * normY;
+                    s[e1*PART_MAXVAR + PART_Z_FTOT] -= mag * normZ;
+
+                    s[e2*PART_MAXVAR + PART_X_FTOT] += mag * normX;
+                    s[e2*PART_MAXVAR + PART_Y_FTOT] += mag * normY;
+                    s[e2*PART_MAXVAR + PART_Z_FTOT] += mag * normZ;
                     break;
                 case F_SPRINGSET:
                     console.log("PartSys.applyForces(), fList[",k,"].forceType:",
@@ -683,38 +727,12 @@ VBOPartSys.prototype.doConstraints = function(sNow, sNext, cList) {
                         // zero thickness, any desired size & position
 
             break;
-            case LIM_VOL_CONE:
-
-                var j = m * PART_MAXVAR;
-                for (; m < mmax; m++ , j += PART_MAXVAR) {
-                    var curr_velocityDir = new Vector3([sNow[j + PART_XVEL], sNow[j + PART_YVEL], sNow[j + PART_ZVEL]]);
-                    var next_particleCoords = new Vector3([sNext[j + PART_XPOS], sNext[j + PART_YPOS], sNext[j + PART_ZPOS]]);
-                    var dist_2D = Math.pow(Math.pow((cList[k].K_coneCenter.elements[0] - next_particleCoords.elements[0]), 2) +
-                        Math.pow((cList[k].K_coneCenter.elements[2] - next_particleCoords.elements[2]), 2), 0.5);
-
-                    var downVector = new Vector3([0.0, -1.0, 0.0]);
-                    var curr_mag = curr_velocityDir.magnitude();
-                    curr_velocityDir = curr_velocityDir.normalize();
-                    var cross_dir = curr_velocityDir.cross(downVector);
-
-                        if (dist_2D < cList[k].radius) {
-                            sNext[j + PART_XPOS] = sNow[j + PART_XPOS];
-                            sNext[j + PART_YPOS] = sNext[j + PART_YPOS];
-                            sNext[j + PART_ZPOS] = sNow[j + PART_ZPOS];
-                            sNext[j + PART_XVEL] = cross_dir.elements[0] * curr_mag;
-                            //sNext[j + PART_YVEL] = cross_dir.elements[1] * curr_mag;
-                            sNext[j + PART_ZVEL] = cross_dir.elements[2] * curr_mag;
-                        //}
-                    }
-                }
-                break;
             case LIM_DISC:    // 2-sided ellipsoidal wall, axis-aligned, flat/2D,
                             // zero thickness, any desired size & position
                 break;
             case LIM_BOX:
                 break;
             case LIM_MAT_WALL:
-
                 break;
             case LIM_MAT_DISC:
                 break;
@@ -723,10 +741,10 @@ VBOPartSys.prototype.doConstraints = function(sNow, sNext, cList) {
             case LIM_MAT_DISC:
                 break;
             case LIM_ANCHOR:
-                var anchorPoint = cList[k].anchorPoint * PART_MAXVAR;
-                sNext[anchorPoint + PART_XPOS] = cList[k].anchorPosition.elements[0];
-                sNext[anchorPoint + PART_YPOS] = cList[k].anchorPosition.elements[1];
-                sNext[anchorPoint + PART_ZPOS] = cList[k].anchorPosition.elements[2];
+                var j = cList[k].archorIndex;
+                sNext[j + PART_XPOS] = sNow[j + PART_XPOS];
+                sNext[j + PART_YPOS] = sNow[j + PART_YPOS];
+                sNext[j + PART_ZPOS] = sNow[j + PART_ZPOS];
                 break;
             case LIM_SLOT:
                 break;
@@ -1008,3 +1026,9 @@ VBOPartSys.prototype.doConstraints1 = function(){
                 } // for loop thru all particles
             }
 */
+
+function pointsDist(point1, point2){
+    sub = new Vector3([point1.elements[0] - point2.elements[0],point1.elements[1] - point2.elements[1],point1.elements[2] - point2.elements[2]])
+    var distance = Math.sqrt(Math.pow(sub.elements[0],2) + Math.pow(sub.elements[1],2) + Math.pow(sub.elements[2],2));
+    return [sub, distance]
+}

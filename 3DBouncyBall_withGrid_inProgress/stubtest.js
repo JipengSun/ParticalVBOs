@@ -78,7 +78,7 @@ function main(){
 
     ground.init();
     cube.init();
-    bouncyball.initBouncy3D(100);
+    bouncyball.initBouncy3D(2);
     bouncyball.vboInit();
 
     var tick = function() {
@@ -582,7 +582,7 @@ function myKeyDown(kev) {
         break;
         case "Space":
         bouncyball.runMode = 2;
-        //console.log(bouncyball.s1,bouncyball.s2)
+        console.log(bouncyball.s1,bouncyball.s2)
             break;
         case "ShiftLeft":
             verticalMovement(1);
