@@ -159,7 +159,7 @@ VBOPartSys.prototype.initBouncy3D = function(count) {
     this.s1dot = new Float32Array(this.partCount * PART_MAXVAR)
 
 // Create & init all force-causing objects------------------------------------
-/*
+
     fTmp = new CForcer();
     fTmp.forceType = F_GRAV_E;
     fTmp.targFirst = 0;
@@ -179,14 +179,14 @@ VBOPartSys.prototype.initBouncy3D = function(count) {
     fTmp.targFirst = 0;
     fTmp.targCount = -1;
     this.forceList.push(fTmp);
-*/
+
     fTmp = new CForcer();
     fTmp.forceType = F_SPRING;
     fTmp.e1 = 0;
     fTmp.e2 = 1;
-    fTmp.K_spring = 10;
-    fTmp.K_springDamp = 0.5;
-    fTmp.K_restLength = 0.1;
+    fTmp.K_spring = 20;
+    fTmp.K_springDamp = 1;
+    fTmp.K_restLength = 0.5;
     this.forceList.push(fTmp);
 
     console.log("PartSys.initBouncy3D() created PartSys.forceList[] array of ");
@@ -221,7 +221,7 @@ VBOPartSys.prototype.initBouncy3D = function(count) {
     cTmp.limitType = LIM_ANCHOR;
     cTmp.targFirst = 0;
     cTmp.partCount = 0;
-    cTmp.archorIndex = 0;
+    cTmp.archorsList = [];
     this.limitList.push(cTmp);
 
     // Report:
@@ -232,10 +232,10 @@ VBOPartSys.prototype.initBouncy3D = function(count) {
 	                  // adjust by ++Start, --Start buttons. Original value
 										// was 0.15 meters per timestep; multiply by 60 to get
                     // meters per second.
-    this.drag = 0.9;// units-free air-drag (scales velocity); adjust by d/D keys
+    this.drag = 0.8;// units-free air-drag (scales velocity); adjust by d/D keys
     this.grav = 9.832;// gravity's acceleration(meter/sec^2); adjust by g/G keys.
                         // on Earth surface, value is 9.832 meters/sec^2.
-    this.resti = 1.0; // units-free 'Coefficient of Restitution' for
+    this.resti = 1; // units-free 'Coefficient of Restitution' for
                         // inelastic collisions.  Sets the fraction of momentum
                                             // (0.0 <= resti < 1.0) that remains after a ball
                                             // 'bounces' on a wall or floor, as computed using
@@ -246,7 +246,7 @@ VBOPartSys.prototype.initBouncy3D = function(count) {
 
     //--------------------------init Particle System Controls:
     this.runMode =  3;// Master Control: 0=reset; 1= pause; 2=step; 3=run
-    this.solvType = SOLV_EULER;// adjust by s/S keys.
+    this.solvType = SOLV_BACK_EULER;// adjust by s/S keys.
                         // SOLV_EULER (explicit, forward-time, as
                                             // found in BouncyBall03.01BAD and BouncyBall04.01badMKS)
                                             // SOLV_OLDGOOD for special-case implicit solver, reverse-time,
@@ -361,25 +361,41 @@ VBOPartSys.prototype.applyForces = function(s,fList){
                     //console.log(e1)
                     var point1 = new Vector3([s[e1*PART_MAXVAR + PART_XPOS],s[e1*PART_MAXVAR + PART_YPOS],s[e1*PART_MAXVAR + PART_ZPOS]]);
                     var point2 = new Vector3([s[e2*PART_MAXVAR + PART_XPOS],s[e2*PART_MAXVAR + PART_YPOS],s[e2*PART_MAXVAR + PART_ZPOS]]);
-                    res = pointsDist(point1,point2);
+                    res = pointsDist(point2,point1);
                     sub = res[0];
                     endDist = res[1];
                     //console.log(res)
                     //console.log(point2)
                     //console.log(sub)
-                    console.log(endDist);
                     var stretch = endDist - fList[k].K_restLength;
+                    console.log(stretch);
                     var mag = stretch * fList[k].K_spring;
                     normX = sub.elements[0] / (endDist + NU_EPSILON);
                     normY = sub.elements[1] / (endDist + NU_EPSILON);
                     normZ = sub.elements[2] / (endDist + NU_EPSILON);
-                    s[e1*PART_MAXVAR + PART_X_FTOT] -= mag * normX;
-                    s[e1*PART_MAXVAR + PART_Y_FTOT] -= mag * normY;
-                    s[e1*PART_MAXVAR + PART_Z_FTOT] -= mag * normZ;
+                    s[e1*PART_MAXVAR + PART_X_FTOT] += mag * normX;
+                    s[e1*PART_MAXVAR + PART_Y_FTOT] += mag * normY;
+                    s[e1*PART_MAXVAR + PART_Z_FTOT] += mag * normZ;
 
-                    s[e2*PART_MAXVAR + PART_X_FTOT] += mag * normX;
-                    s[e2*PART_MAXVAR + PART_Y_FTOT] += mag * normY;
-                    s[e2*PART_MAXVAR + PART_Z_FTOT] += mag * normZ;
+                    s[e2*PART_MAXVAR + PART_X_FTOT] -= mag * normX;
+                    s[e2*PART_MAXVAR + PART_Y_FTOT] -= mag * normY;
+                    s[e2*PART_MAXVAR + PART_Z_FTOT] -= mag * normZ;
+
+                    // Damping
+                    var netXVel = s[e2*PART_MAXVAR + PART_XVEL] - s[e1*PART_MAXVAR + PART_XVEL];
+                    var netYVel = s[e2*PART_MAXVAR + PART_YVEL] - s[e1*PART_MAXVAR + PART_YVEL];
+                    var netZVel = s[e2*PART_MAXVAR + PART_ZVEL] - s[e1*PART_MAXVAR + PART_ZVEL];
+
+                    magD = netXVel * normX + netYVel * normY + netZVel * normZ;
+                    magD *= fList[k].K_springDamp;
+                    s[e1*PART_MAXVAR + PART_X_FTOT] += magD * normX;
+                    s[e1*PART_MAXVAR + PART_Y_FTOT] += magD * normY;
+                    s[e1*PART_MAXVAR + PART_Z_FTOT] += magD * normZ;
+
+                    s[e2*PART_MAXVAR + PART_X_FTOT] -= magD * normX;
+                    s[e2*PART_MAXVAR + PART_Y_FTOT] -= magD * normY;
+                    s[e2*PART_MAXVAR + PART_Z_FTOT] -= magD * normZ;
+
                     break;
                 case F_SPRINGSET:
                     console.log("PartSys.applyForces(), fList[",k,"].forceType:",
@@ -741,10 +757,15 @@ VBOPartSys.prototype.doConstraints = function(sNow, sNext, cList) {
             case LIM_MAT_DISC:
                 break;
             case LIM_ANCHOR:
-                var j = cList[k].archorIndex;
-                sNext[j + PART_XPOS] = sNow[j + PART_XPOS];
-                sNext[j + PART_YPOS] = sNow[j + PART_YPOS];
-                sNext[j + PART_ZPOS] = sNow[j + PART_ZPOS];
+                for(var i = 0;i < cList[k].archorsList.length;i++){
+                    var j = cList[k].archorsList[i]*PART_MAXVAR;
+                    sNext[j + PART_XPOS] = sNow[j + PART_XPOS];
+                    sNext[j + PART_YPOS] = sNow[j + PART_YPOS];
+                    sNext[j + PART_ZPOS] = sNow[j + PART_ZPOS];
+                    sNext[j + PART_XVEL] = 0.0;
+                    sNext[j + PART_YVEL] = 0.0;
+                    sNext[j + PART_ZVEL] = 0.0;
+                }
                 break;
             case LIM_SLOT:
                 break;

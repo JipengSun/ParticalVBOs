@@ -161,7 +161,7 @@ function CLimit() {
 
   this.minvel = 0.3;
 
-  this.anchorIndex;
+  this.anchorsList = []; // Store the indice of anchored particles.
 }
 
 CLimit.prototype.printMe = function(opt_src) {
