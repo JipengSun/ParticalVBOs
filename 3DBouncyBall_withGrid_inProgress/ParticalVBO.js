@@ -273,7 +273,8 @@ VBOPartSys.prototype.initBouncy3D = function(count,offset_x,offset_y,offset_z) {
         this.s1[j + PART_AGE] = 30 + 100*Math.random();
 
         var cDist = cameraDist(this.s1[j + PART_XPOS],this.s1[j + PART_YPOS],this.s1[j + PART_ZPOS]) 
-        this.s1[j + PART_DIAM] = this.diam/cDist + NU_EPSILON;
+        console.log(cDist);
+        this.s1[j + PART_DIAM] = this.diam/(cDist + NU_EPSILON);
 
         this.s2.set(this.s1);
     }
@@ -404,7 +405,7 @@ VBOPartSys.prototype.initSpringPair = function(count,offset_x,offset_y,offset_z)
         this.s1[j + PART_AGE] = 30 + 100*Math.random();
 
         var cDist = cameraDist(this.s1[j + PART_XPOS],this.s1[j + PART_YPOS],this.s1[j + PART_ZPOS]) 
-        this.s1[j + PART_DIAM] = this.diam/cDist + NU_EPSILON;
+        this.s1[j + PART_DIAM] = this.diam/(cDist + NU_EPSILON);
 
         this.s2.set(this.s1);
     }
@@ -1030,6 +1031,11 @@ VBOPartSys.prototype.adjust = function(){
   										this.ModelMat.elements);	// send data from Javascript.
 // Adjust the attributes' stride and offset (if necessary)
 // (use gl.vertexAttribPointer() calls and gl.enableVertexAttribArray() calls)
+    for (var i = 0, j = 0; i < this.partCount; i+=1, j+= PART_MAXVAR){
+        cDist = cameraDist(this.s1[j + PART_XPOS],this.s1[j + PART_YPOS],this.s1[j + PART_ZPOS]) 
+        console.log(cDist);
+        this.s1[j + PART_DIAM] = this.diam/(cDist + NU_EPSILON);
+    }
 }
 
 
