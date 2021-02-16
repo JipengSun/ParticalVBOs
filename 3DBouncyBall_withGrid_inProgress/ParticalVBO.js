@@ -17,7 +17,6 @@ const PART_DIAM 	=14;	// on-screen diameter (in pixels)
 const PART_RENDMODE =15;	// on-screen appearance (square, round, or soft-round)
  // Other useful particle values, currently unused
 const PART_AGE      =16;  // # of frame-times until re-initializing (Reeves Fire)
-const PART_SIZE     =17
 /*
 const PART_CHARGE   =17;  // for electrostatic repulsion/attraction
 const PART_MASS_VEL =18;  // time-rate-of-change of mass.
@@ -29,7 +28,7 @@ const PART_R_FTOT   =23;  // force-accumulator for color-change: red
 const PART_G_FTOT   =24;  // force-accumulator for color-change: grn
 const PART_B_FTOT   =25;  // force-accumulator for color-change: blu
 */
-const PART_MAXVAR   =18;  // Size of array in CPart uses to store its values.
+const PART_MAXVAR   =17;  // Size of array in CPart uses to store its values.
 
 
 // Array-Name consts that select PartSys objects' numerical-integration solver:
@@ -78,10 +77,11 @@ function VBOPartSys(){
   ' precision mediump float;                 \n' + // req'd in OpenGL ES if we use 'float'
   ' uniform    int u_runMode;                \n' + // particle system state: // 0=reset; 1= pause; 2=step; 3=run
   ' attribute vec4 a_Position;               \n' +
+  ' attribute float a_Size;                  \n' +
   ' uniform   mat4 u_ModelMat;               \n' +
   ' varying   vec4 v_Color;                  \n' +
   ' void main() {                            \n' +
-  '   gl_PointSize = 20.0;                 \n' +// TRY MAKING THIS LARGER...
+  '   gl_PointSize = a_Size;                 \n' +// TRY MAKING THIS LARGER...
   '   gl_Position = u_ModelMat * a_Position; \n' +
   '   if(u_runMode == 0) {                   \n' +
   '     v_Color = vec4(1.0, 0.0, 0.0, 1.0);  \n' +   // red: 0==reset
@@ -229,7 +229,7 @@ VBOPartSys.prototype.initBouncy3D = function(count,offset_x,offset_y,offset_z) {
 	                  // adjust by ++Start, --Start buttons. Original value
 										// was 0.15 meters per timestep; multiply by 60 to get
                     // meters per second.
-    this.drag = 0.8;// units-free air-drag (scales velocity); adjust by d/D keys
+    this.drag = 0.7;// units-free air-drag (scales velocity); adjust by d/D keys
     this.grav = 9.832;// gravity's acceleration(meter/sec^2); adjust by g/G keys.
                         // on Earth surface, value is 9.832 meters/sec^2.
     this.resti = 1; // units-free 'Coefficient of Restitution' for
@@ -253,6 +253,7 @@ VBOPartSys.prototype.initBouncy3D = function(count,offset_x,offset_y,offset_z) {
                                             // ==1 for Chapter 3's collision resolution method, which
                                             // uses an 'impulse' to cancel any velocity boost caused
                                             // by falling below the floor.
+    this.diam = 100.0;
 
     // INITIALIZE s1, s2:
     var j = 0;
@@ -270,7 +271,9 @@ VBOPartSys.prototype.initBouncy3D = function(count,offset_x,offset_y,offset_z) {
         this.s1[j + PART_DIAM] =  2.0 + 10*Math.random();
         this.s1[j + PART_RENDMODE] = 0.0;
         this.s1[j + PART_AGE] = 30 + 100*Math.random();
-        this.s1[j + PART_SIZE] = 20.0;
+
+        var cDist = cameraDist(this.s1[j + PART_XPOS],this.s1[j + PART_YPOS],this.s1[j + PART_ZPOS]) 
+        this.s1[j + PART_DIAM] = this.diam/cDist + NU_EPSILON;
 
         this.s2.set(this.s1);
     }
@@ -382,7 +385,7 @@ VBOPartSys.prototype.initSpringPair = function(count,offset_x,offset_y,offset_z)
                                             // ==1 for Chapter 3's collision resolution method, which
                                             // uses an 'impulse' to cancel any velocity boost caused
                                             // by falling below the floor.
-
+    this.diam = 100.0;
     // INITIALIZE s1, s2:
     var j = 0;
     for (var i = 0; i < this.partCount; i += 1, j += PART_MAXVAR){
@@ -399,7 +402,9 @@ VBOPartSys.prototype.initSpringPair = function(count,offset_x,offset_y,offset_z)
         this.s1[j + PART_DIAM] =  2.0 + 10*Math.random();
         this.s1[j + PART_RENDMODE] = 0.0;
         this.s1[j + PART_AGE] = 30 + 100*Math.random();
-        this.s1[j + PART_SIZE] = 20.0;
+
+        var cDist = cameraDist(this.s1[j + PART_XPOS],this.s1[j + PART_YPOS],this.s1[j + PART_ZPOS]) 
+        this.s1[j + PART_DIAM] = this.diam/cDist + NU_EPSILON;
 
         this.s2.set(this.s1);
     }
@@ -579,7 +584,6 @@ VBOPartSys.prototype.dotFinder = function(s1dot,s1){
         s1dot[j + PART_DIAM]     = 0.0;
         s1dot[j + PART_RENDMODE] = 0.0;
         s1dot[j + PART_AGE]      = 0.0;
-        s1dot[j + PART_SIZE]     = 0.0;
     }
 }
 VBOPartSys.prototype.render = function(s){
@@ -940,12 +944,26 @@ VBOPartSys.prototype.vboInit = function(){
         console.log(this.constructor.name +
                                 '.init() Failed to get GPU location of attribute a_PosLoc');
         return -1;	// error exit.
-      }
+    }
+
+    this.a_SizeLoc = gl.getAttribLocation(this.shaderLoc,'a_Size');
+    if (this.a_SizeID < 0) {
+        console.log('PartSys.init() Failed to get the storage location of a_Size');
+        return -1;
+    }
+
+    this.u_runModeID = gl.getUniformLocation(gl.program, 'u_runMode');
+    if(!this.u_runModeID) {
+        console.log('PartSys.init() Failed to get u_runMode variable location');
+  	return;
+    }
+
     this.u_ModelMatLoc = gl.getUniformLocation(this.shaderLoc, 'u_ModelMat');
     if (!this.u_ModelMatLoc) {
-        console.log(this.constructor.name +
-    						'.init() failed to get GPU location for u_ModelMatrix uniform');
+        console.log(this.constructor.name + 
+                                '.init() failed to get GPU location for u_ModelMatrix uniform');
     return;
+
   }
   console.log('VBO box init');
 
@@ -964,11 +982,17 @@ VBOPartSys.prototype.switchToMe = function(){
         PART_XPOS * this.FSIZE
     );
     gl.enableVertexAttribArray(this.a_PosLoc);
-    this.u_runModeID = gl.getUniformLocation(gl.program, 'u_runMode');
-    if(!this.u_runModeID) {
-        console.log('PartSys.init() Failed to get u_runMode variable location');
-  	return;
-    }
+
+    gl.vertexAttribPointer(
+        this.a_SizeLoc, 
+        1, 
+        gl.FLOAT, 
+        false, 
+        PART_MAXVAR * this.FSIZE, 
+        PART_DIAM * this.FSIZE
+    );
+    gl.enableVertexAttribArray(this.a_SizeLoc);
+
     gl.uniform1i(this.u_runModeID, this.runMode);
 }
 
@@ -1175,4 +1199,9 @@ function pointsDist(point1, point2){
     sub = new Vector3([point1.elements[0] - point2.elements[0],point1.elements[1] - point2.elements[1],point1.elements[2] - point2.elements[2]])
     var distance = Math.sqrt(Math.pow(sub.elements[0],2) + Math.pow(sub.elements[1],2) + Math.pow(sub.elements[2],2));
     return [sub, distance]
+}
+
+function cameraDist(x,y,z){
+    var distance = Math.sqrt(Math.pow(x_Coordinate - x,2) + Math.pow(y_Coordinate - y,2) + Math.pow(z_Coordinate - z,2))
+    return distance
 }

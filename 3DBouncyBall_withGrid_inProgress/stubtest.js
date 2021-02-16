@@ -25,7 +25,7 @@ var g_timeStepMax = g_timeStep;
 
 var g_worldMat = new Matrix4();
 var current_rotation = 0;
-var x_Coordinate = -18;
+var x_Coordinate = -8;
 var y_Coordinate = 0;
 var z_Coordinate = 0.5;
 var x_lookAt = 0;
@@ -46,6 +46,8 @@ springpair = new VBOPartSys();
 ground = new groundVBO();
 cubeBouncyBall = new cubeVBO(1.0,0.0,0.0,0.0);
 cubeSpringPair = new cubeVBO(1.0,0.0,3.0,0.0);
+
+
 function main(){
     g_canvas = document.getElementById('webgl');
     gl = g_canvas.getContext('webgl',{preserveDrawingBuffer: true})
@@ -69,7 +71,7 @@ function main(){
     ground.init();
     cubeBouncyBall.init();
     cubeSpringPair.init();
-    bouncyball.initBouncy3D(2,0.0,0.0,0.0);
+    bouncyball.initBouncy3D(100,0.0,0.0,0.0);
     bouncyball.vboInit();
     springpair.initSpringPair(2,0.0,3.0,0.0);
     springpair.vboInit();
