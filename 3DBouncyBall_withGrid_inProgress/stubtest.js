@@ -45,6 +45,8 @@ var bouncyballCount = 100;
 
 bouncyball = new VBOPartSys();
 springpair = new VBOPartSys();
+boids = new VBOPartSys();
+
 ground = new groundVBO();
 cubeBouncyBall = new cubeVBO(1.0,0.0,0.0,0.0);
 cubeSpringPair = new cubeVBO(1.0,0.0,3.0,0.0);
@@ -73,10 +75,12 @@ function main(){
     ground.init();
     cubeBouncyBall.init();
     cubeSpringPair.init();
-    bouncyball.initBouncy3D(bouncyballCount,0.0,0.0,0.0);
+    bouncyball.initBouncy3D(bouncyballCount,0.0,-3.0,0.0);
     bouncyball.vboInit();
     springpair.initSpringPair(2,0.0,3.0,0.0);
     springpair.vboInit();
+    boids.initFlocking(100,0.0,0.0,0.0);
+    boids.vboInit();
 
     var tick = function() {
         g_timeStep = animate();
@@ -113,8 +117,6 @@ function animate() {
       if (updateRotAngle == true) {
         g_rotAngle += g_angleRate * updateRotAngleSign * g_timeStep * 0.001;
       }
-
-
       return elapsed;
     }
 
@@ -156,6 +158,15 @@ function drawAll(){
         springpair.render();
         springpair.swap();
 
+        boids.switchToMe();
+        boids.adjust();
+        boids.applyForces(boids.s1,boids.forceList);
+        boids.dotFinder(boids.s1dot,boids.s1);
+        boids.solver();
+        boids.doConstraints(boids.s1,boids.s2,boids.limitList);
+        boids.render();
+        boids.swap();
+
 
     }
     else{
@@ -178,6 +189,10 @@ function drawAll(){
         springpair.switchToMe();
         springpair.adjust();
         springpair.render();
+
+        boids.switchToMe();
+        boids.adjust();
+        boids.render();
 
     }
 

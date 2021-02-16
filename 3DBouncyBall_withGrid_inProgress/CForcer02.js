@@ -33,7 +33,8 @@ const F_SPRINGSET = 8;      // a big collection of identical springs; lets you
                             // object, instead of many many F_SPRING objects.
 const F_CHARGE    = 9;      // attract/repel by charge and inverse distance.
 const F_FRIC      = 10;
-const F_MAXKINDS  = 11;      // 'max' is always the LAST name in our list;
+const F_BOIDS     = 11;
+const F_MAXKINDS  = 12;      // 'max' is always the LAST name in our list;
                             // gives the total number of choices for forces.
 
 /* NOTE THAT different forceType values (e.g. gravity vs spring) will need
@@ -94,6 +95,11 @@ function CForcer() {
   this.K_restLength;         // the zero-force length of this spring.
   
   this.d_fric;
+
+  this.effectRadius;
+  this.K_avoid = 1;
+  this.K_vel = 1;
+  this.K_centering = 1;
 }
 
 CForcer.prototype.printMe = function(opt_src) {
