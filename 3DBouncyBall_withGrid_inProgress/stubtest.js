@@ -40,6 +40,8 @@ var g_angleRate = 10.0;
 var lookAtVector = new Vector3([x_lookAt, y_lookAt, z_lookAt]);
 var eyePosVector = new Vector3([x_Coordinate, y_Coordinate, z_Coordinate]);
 
+//bouncyball variables
+var bouncyballCount = 100;
 
 bouncyball = new VBOPartSys();
 springpair = new VBOPartSys();
@@ -63,7 +65,7 @@ function main(){
     window.addEventListener("mouseup", myMouseUp);
     window.addEventListener("click", myMouseClick);
     window.addEventListener("dblclick", myMouseDblClick);
-
+    window.onload = windowLoad();
     gl.clearColor(0.25, 0.25, 0.25, 1);	// RGBA color for clearing WebGL framebuffer
     gl.clear(gl.COLOR_BUFFER_BIT);		  // clear it once to set that color as bkgnd.
     gl.enable(gl.DEPTH_TEST);
@@ -71,7 +73,7 @@ function main(){
     ground.init();
     cubeBouncyBall.init();
     cubeSpringPair.init();
-    bouncyball.initBouncy3D(100,0.0,0.0,0.0);
+    bouncyball.initBouncy3D(bouncyballCount,0.0,0.0,0.0);
     bouncyball.vboInit();
     springpair.initSpringPair(2,0.0,3.0,0.0);
     springpair.vboInit();
@@ -622,3 +624,46 @@ function Range(min, max, number) {
     else if (number > max) return max;
     else return number;
 }
+
+
+//Control panel using google dat.gui
+var bouncyballGui = function(){
+    this.particles = bouncyballCount;
+
+    this.reload = function(){
+        bouncyballCount = this.particles;
+        /*this.shaderLoc = createProgram(gl, this.VSHADER_SOURCE_PARTICLE, this.FSHADER_SOURCE_PARTICLE);
+        if (!this.shaderLoc) {
+            console.log(this.constructor.name + 
+                        '.init() failed to create executable Shaders on the GPU. Bye!');
+            return;
+        }
+        this.g_partA.initBouncy3D(count, this.shaderLoc);*/
+        bouncyball = new VBOPartSys();
+        bouncyball.initBouncy3D(bouncyballCount,0.0,0.0,0.0);
+        bouncyball.vboInit();
+    }
+    
+}
+
+function windowLoad(){
+    var bouncyballFolder = new bouncyballGui();
+    var gui = new dat.GUI();
+
+    var normalBouncyball = gui.addFolder('Bouncy Balls');
+    normalBouncyball.add(bouncyballFolder, 'particles');
+    normalBouncyball.add(bouncyballFolder, 'reload');
+    normalBouncyball.open();
+}
+
+
+
+
+
+
+
+
+
+
+
+
