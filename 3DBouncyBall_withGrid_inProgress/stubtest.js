@@ -25,7 +25,7 @@ var g_timeStepMax = g_timeStep;
 
 var g_worldMat = new Matrix4();
 var current_rotation = 0;
-var x_Coordinate = -8;
+var x_Coordinate = -15;
 var y_Coordinate = 0;
 var z_Coordinate = 0.5;
 var x_lookAt = 0;
@@ -43,13 +43,25 @@ var eyePosVector = new Vector3([x_Coordinate, y_Coordinate, z_Coordinate]);
 //bouncyball variables
 var bouncyballCount = 100;
 
+//spring pair variables
+var kspring = 10.0;
+var kdamp = 1.0;
+
+//boids variables
+var partcount = 100;
+var ka = 3;
+var kv = 1;
+var kc = 4;
+var rad = 0.5;
+
 bouncyball = new VBOPartSys();
 springpair = new VBOPartSys();
 boids = new VBOPartSys();
 
 ground = new groundVBO();
-cubeBouncyBall = new cubeVBO(1.0,0.0,0.0,0.0);
-cubeSpringPair = new cubeVBO(1.0,0.0,3.0,0.0);
+cubeBouncyBall = new cubeVBO(1.0, 0.0, -3.0, 0.0);
+cubeSpringPair = new cubeVBO(1.0, 0.0, 3.0, 0.0);
+cubeBoids      = new cubeVBO(1.0, 0.0, 0.0, 0.0);
 
 
 function main(){
@@ -75,11 +87,13 @@ function main(){
     ground.init();
     cubeBouncyBall.init();
     cubeSpringPair.init();
+    cubeBoids.init();
+
     bouncyball.initBouncy3D(bouncyballCount,0.0,-3.0,0.0);
     bouncyball.vboInit();
-    springpair.initSpringPair(2,0.0,3.0,0.0);
+    springpair.initSpringPair(2,0.0,3.0,0.0,kspring,kdamp);
     springpair.vboInit();
-    boids.initFlocking(100,0.0,0.0,0.0);
+    boids.initFlocking(partcount,0.0,0.0,0.0,ka,kv,kc,rad);
     boids.vboInit();
 
     var tick = function() {
@@ -140,6 +154,10 @@ function drawAll(){
         cubeSpringPair.adjust();
         cubeSpringPair.render();
 
+        cubeBoids.switchToMe();
+        cubeBoids.adjust();
+        cubeBoids.render();
+
         bouncyball.switchToMe();
         bouncyball.adjust();
         bouncyball.applyForces(bouncyball.s1,bouncyball.forceList);
@@ -181,6 +199,10 @@ function drawAll(){
         cubeSpringPair.switchToMe();
         cubeSpringPair.adjust();
         cubeSpringPair.render();
+
+        cubeBoids.switchToMe();
+        cubeBoids.adjust();
+        cubeBoids.render();
 
         bouncyball.switchToMe()
         bouncyball.adjust()
@@ -243,9 +265,9 @@ function MoveLookAtPoint(sign, displacement) {
 }
 
 function translationOnCamera(sign) {
-  var displacement = new Float32Array([(x_lookAt - x_Coordinate) * 0.1,
-                                       (y_lookAt - y_Coordinate) * 0.1,
-                                       (z_lookAt - z_Coordinate) * 0.1]);
+  var displacement = new Float32Array([(x_lookAt - x_Coordinate) * 0.2,
+                                       (y_lookAt - y_Coordinate) * 0.3,
+                                       (z_lookAt - z_Coordinate) * 0.2]);
 
   MoveCameraLocation(sign, displacement);
   MoveLookAtPoint(sign, displacement);
@@ -655,20 +677,67 @@ var bouncyballGui = function(){
         }
         this.g_partA.initBouncy3D(count, this.shaderLoc);*/
         bouncyball = new VBOPartSys();
-        bouncyball.initBouncy3D(bouncyballCount,0.0,0.0,0.0);
+        bouncyball.initBouncy3D(bouncyballCount,0.0,-3.0,0.0);
         bouncyball.vboInit();
+    }   
+}
+
+var springpairGui = function(){
+    this.K_Spring = kspring;
+    this.K_Damp = kdamp;
+    this.reload = function(){
+        kspring = this.K_Spring;
+        kdamp = this.K_Damp;
+        springpair = new VBOPartSys();
+        springpair.initSpringPair(2,0.0,3.0,0.0,kspring,kdamp)
+        springpair.vboInit();
+    }   
+}
+
+var boidsGui = function(){
+    this.particles = partcount;
+    this.K_avoidence = ka;
+    this.K_velocity = kv;
+    this.K_centering = kc;
+    this.Radius = rad;
+    this.reload = function(){
+        partcount = this.particles;
+        ka = this.K_avoidence;
+        kv = this.K_velocity;
+        kc = this.K_centering;
+        rad = this.Radius;
+        
+        boids = new VBOPartSys();
+        boids.initFlocking(partcount,0.0,0.0,0.0,0.0,ka,kv,kc,rad);
+        boids.vboInit();
     }
-    
 }
 
 function windowLoad(){
     var bouncyballFolder = new bouncyballGui();
+    var springpairFolder = new springpairGui();
+    var boidsFolder = new boidsGui();
     var gui = new dat.GUI();
 
     var normalBouncyball = gui.addFolder('Bouncy Balls');
     normalBouncyball.add(bouncyballFolder, 'particles');
     normalBouncyball.add(bouncyballFolder, 'reload');
     normalBouncyball.open();
+
+    var normalSpringPair = gui.addFolder('Spring Pair');
+    normalSpringPair.add(springpairFolder,'K_Spring',0.5,20);
+    normalSpringPair.add(springpairFolder,'K_Damp',0.5,10);
+    normalSpringPair.add(springpairFolder,'reload');
+    normalSpringPair.open();
+
+    var normalboids = gui.addFolder('Boids');
+    normalboids.add(boidsFolder,'particles');
+    normalboids.add(boidsFolder,'K_avoidence',0.5,10);
+    normalboids.add(boidsFolder,'K_velocity',0.5,10);
+    normalboids.add(boidsFolder,'K_centering',0.5,10);
+    normalboids.add(boidsFolder,'Radius',0.1,2);
+    normalboids.add(boidsFolder,'reload')
+    normalboids.open()
 }
 
 

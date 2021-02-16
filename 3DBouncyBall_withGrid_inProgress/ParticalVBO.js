@@ -282,7 +282,7 @@ VBOPartSys.prototype.initBouncy3D = function(count,offset_x,offset_y,offset_z) {
 
 
 }
-VBOPartSys.prototype.initSpringPair = function(count,offset_x,offset_y,offset_z) { 
+VBOPartSys.prototype.initSpringPair = function(count,offset_x,offset_y,offset_z,kspring,kdamp) { 
     this.partCount = count;
     this.s1 = new Float32Array(this.partCount * PART_MAXVAR)
     this.s2 = new Float32Array(this.partCount * PART_MAXVAR)
@@ -314,8 +314,8 @@ VBOPartSys.prototype.initSpringPair = function(count,offset_x,offset_y,offset_z)
     fTmp.forceType = F_SPRING;
     fTmp.e1 = 0;
     fTmp.e2 = 1;
-    fTmp.K_spring = 20;
-    fTmp.K_springDamp = 1;
+    fTmp.K_spring = kspring;
+    fTmp.K_springDamp = kdamp;
     fTmp.K_restLength = 0.5;
     this.forceList.push(fTmp);
 
@@ -411,7 +411,7 @@ VBOPartSys.prototype.initSpringPair = function(count,offset_x,offset_y,offset_z)
     }
     this.FSIZE = this.s1.BYTES_PER_ELEMENT;
     }
-VBOPartSys.prototype.initFlocking = function(count,offset_x,offset_y,offset_z){
+VBOPartSys.prototype.initFlocking = function(count,offset_x,offset_y,offset_z,ka,kv,kc,rad){
     this.partCount = count;
     this.s1 = new Float32Array(this.partCount * PART_MAXVAR)
     this.s2 = new Float32Array(this.partCount * PART_MAXVAR)
@@ -452,10 +452,10 @@ VBOPartSys.prototype.initFlocking = function(count,offset_x,offset_y,offset_z){
     fTmp.forceType = F_BOIDS;
     fTmp.targFirst = 0;
     fTmp.targCount = -1;
-    fTmp.effectRadius = 0.5;
-    fTmp.K_avoid = 10;
-    fTmp.K_vel = 1;
-    fTmp.K_centering = 1;
+    fTmp.effectRadius = rad;
+    fTmp.K_avoid = ka;
+    fTmp.K_vel = kv;
+    fTmp.K_centering = kc;
     this.forceList.push(fTmp);
     // Report:
     console.log("PartSys.initBouncy3D() created PartSys.forceList[] array of ");
@@ -497,7 +497,7 @@ VBOPartSys.prototype.initFlocking = function(count,offset_x,offset_y,offset_z){
     console.log("PartSys.initBouncy3D() created PartSys.limitList[] array of ");
     console.log("\t\t", this.limitList.length, "CLimit objects.");
 
-    this.INIT_VEL =  0.15 * 60.0;		// initial velocity in meters/sec.
+    this.INIT_VEL =  1//0.15 * 60.0;		// initial velocity in meters/sec.
 	                  // adjust by ++Start, --Start buttons. Original value
 										// was 0.15 meters per timestep; multiply by 60 to get
                     // meters per second.
@@ -535,9 +535,9 @@ VBOPartSys.prototype.initFlocking = function(count,offset_x,offset_y,offset_z){
         this.s1[j + PART_ZPOS] = -0.0 + 0.1 * this.randZ + offset_z;
         this.s1[j + PART_WPOS] =  1.0;
         this.roundRand();
-        this.s1[j + PART_XVEL] = this.INIT_VEL * (0.4 + 0.2*this.randX);
-        this.s1[j + PART_YVEL] = this.INIT_VEL * (0.4 + 0.2*this.randY);
-        this.s1[j + PART_ZVEL] = this.INIT_VEL * (0.4 + 0.2*this.randZ);
+        this.s1[j + PART_XVEL] = this.INIT_VEL * (0.4 + 0.1*this.randX);
+        this.s1[j + PART_YVEL] = this.INIT_VEL * (0.4 + 0.1*this.randY);
+        this.s1[j + PART_ZVEL] = this.INIT_VEL * (0.4 + 0.1*this.randZ);
         this.s1[j + PART_MASS] = 1.0;
         this.s1[j + PART_DIAM] =  2.0 + 10*Math.random();
         this.s1[j + PART_RENDMODE] = 0.0;
