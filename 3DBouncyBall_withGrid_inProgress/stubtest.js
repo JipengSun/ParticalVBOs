@@ -47,6 +47,13 @@ var bouncyballCount = 100;
 var kspring = 10.0;
 var kdamp = 1.0;
 
+// spring mesh variables
+var kspring = 1.0;
+var kdamp = 10.0;
+var restL = 0.2;
+var width = 10;
+var height = 5;
+
 //boids variables
 var partcount = 100;
 var ka = 3;
@@ -56,13 +63,14 @@ var rad = 0.5;
 
 bouncyball = new VBOPartSys();
 springpair = new VBOPartSys();
+springmesh = new VBOPartSys();
 boids = new VBOPartSys();
 
 ground = new groundVBO();
 cubeBouncyBall = new cubeVBO(1.0, 0.0, -3.0, 0.0);
-cubeSpringPair = new cubeVBO(1.0, 0.0, 3.0, 0.0);
+cubeSpringPair = new cubeVBO(1.0, 0.0, 6.0, 0.0);
 cubeBoids      = new cubeVBO(1.0, 0.0, 0.0, 0.0);
-
+cubeSpringMesh = new cubeVBO(1.0, 0.0, 3.0, 0.0);
 
 function main(){
     g_canvas = document.getElementById('webgl');
@@ -87,12 +95,15 @@ function main(){
     ground.init();
     cubeBouncyBall.init();
     cubeSpringPair.init();
+    cubeSpringMesh.init();
     cubeBoids.init();
 
     bouncyball.initBouncy3D(bouncyballCount,0.0,-3.0,0.0);
     bouncyball.vboInit();
-    springpair.initSpringPair(2,0.0,3.0,0.0,kspring,kdamp);
+    springpair.initSpringPair(2, 0.0, 6.0, 0.0, kspring, kdamp);
     springpair.vboInit();
+    springmesh.initSpringMesh(0.0, 3.0, 0.0, kspring, kdamp, height, width, restL);
+    springmesh.vboInit();
     boids.initFlocking(partcount,0.0,0.0,0.0,ka,kv,kc,rad);
     boids.vboInit();
 
@@ -154,6 +165,10 @@ function drawAll(){
         cubeSpringPair.adjust();
         cubeSpringPair.render();
 
+        cubeSpringMesh.switchToMe();
+        cubeSpringMesh.adjust();
+        cubeSpringMesh.render();
+
         cubeBoids.switchToMe();
         cubeBoids.adjust();
         cubeBoids.render();
@@ -175,6 +190,15 @@ function drawAll(){
         springpair.doConstraints(springpair.s1,springpair.s2,springpair.limitList);
         springpair.render();
         springpair.swap();
+
+        springmesh.switchToMe();
+        springmesh.adjust();
+        springmesh.applyForces(springmesh.s1,springmesh.forceList);
+        springmesh.dotFinder(springmesh.s1dot, springmesh.s1);
+        springmesh.solver();
+        springmesh.doConstraints(springmesh.s1,springmesh.s2,springmesh.limitList);
+        springmesh.render();
+        springmesh.swap();
 
         boids.switchToMe();
         boids.adjust();
@@ -200,6 +224,10 @@ function drawAll(){
         cubeSpringPair.adjust();
         cubeSpringPair.render();
 
+        cubeSpringMesh.switchToMe();
+        cubeSpringMesh.adjust();
+        cubeSpringMesh.render();
+
         cubeBoids.switchToMe();
         cubeBoids.adjust();
         cubeBoids.render();
@@ -211,6 +239,10 @@ function drawAll(){
         springpair.switchToMe();
         springpair.adjust();
         springpair.render();
+
+        springmesh.switchToMe();
+        springmesh.adjust();
+        springmesh.render();
 
         boids.switchToMe();
         boids.adjust();
@@ -689,7 +721,7 @@ var springpairGui = function(){
         kspring = this.K_Spring;
         kdamp = this.K_Damp;
         springpair = new VBOPartSys();
-        springpair.initSpringPair(2,0.0,3.0,0.0,kspring,kdamp)
+        springpair.initSpringPair(2,0.0,6.0,0.0,kspring,kdamp)
         springpair.vboInit();
     }   
 }
