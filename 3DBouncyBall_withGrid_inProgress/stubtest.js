@@ -25,7 +25,7 @@ var g_timeStepMax = g_timeStep;
 
 var g_worldMat = new Matrix4();
 var current_rotation = 0;
-var x_Coordinate = -15;
+var x_Coordinate = -25;
 var y_Coordinate = 0;
 var z_Coordinate = 0.5;
 var x_lookAt = 0;
@@ -306,7 +306,7 @@ function drawAll(){
         boids.render();
 
         flame.switchToMe();
-        flame.adjust();
+        //flame.adjust();
         flame.render();
 
         tornado.switchToMe();
@@ -612,6 +612,8 @@ function myKeyDown(kev) {
         break;
     case "Space":
         bouncyball.runMode = 2;
+        document.getElementById('KeyDown').innerHTML =
+			  'myKeyDown() space bar: single step!';    // print on webpage
         console.log(bouncyball.s1,bouncyball.s2)
             break;
     case "ShiftLeft":
@@ -724,11 +726,37 @@ var springmeshGui = function(){
 
 }
 
+var tornadoGui = function(){
+    this.particles = torcount;
+    this.Bubble_Radius = bubrad;
+    this.reload = function(){
+        torcount = this.particles;
+        bubrad = this.Bubble_Radius;
+
+        tornado = new VBOPartSys();
+        tornado.initTornado(torcount,0.0,3.0,0.0,bubrad);
+        tornado.vboInit();
+    }
+}
+
+var flameGui = function(){
+    this.particles = firecount;
+    this.reload = function(){
+        firecount = this.particles;
+
+        flame = new VBOPartSys();
+        flame = initFireReeves(firecount,0.0,0.0,0.0);
+        flame.vboInit();
+    }
+}
+
 function windowLoad(){
     var bouncyballFolder = new bouncyballGui();
     var springpairFolder = new springpairGui();
     var springmeshFolder = new springmeshGui();
     var boidsFolder = new boidsGui();
+    var tornadoFolder = new tornadoGui();
+    var flameFolder = new flameGui();
     var gui = new dat.GUI();
 
     var normalBouncyball = gui.addFolder('Bouncy Balls');
@@ -761,6 +789,17 @@ function windowLoad(){
     normalboids.add(boidsFolder,'Radius',0.1,2);
     normalboids.add(boidsFolder,'reload');
     normalboids.open();
+
+    var normaltornado = gui.addFolder('Tornado');
+    normaltornado.add(tornadoFolder,'particles');
+    normaltornado.add(tornadoFolder,'Bubble_Radius',0.1,1.0);
+    normaltornado.add(tornadoFolder,'reload');
+    normaltornado.open();
+
+    var normalflame = gui.addFolder('Flame');
+    normalflame.add(flameFolder,'particles');
+    normalflame.add(flameFolder,'reload');
+    normalflame.open();
 }
 
 

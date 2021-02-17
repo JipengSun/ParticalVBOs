@@ -1060,9 +1060,9 @@ VBOPartSys.prototype.initTornado = function(count,offset_x,offset_y,offset_z,bub
 
         var cDist = cameraDist(this.s1[j + PART_XPOS],this.s1[j + PART_YPOS],this.s1[j + PART_ZPOS]) 
         this.s1[j + PART_DIAM] = this.diam/(cDist + NU_EPSILON);
-        this.s1[j + PART_R] = 0.75;
-        this.s1[j + PART_G] = 0.75;
-        this.s1[j + PART_B] = 0.75;
+        this.s1[j + PART_R] = 0.8;
+        this.s1[j + PART_G] = 0.4;
+        this.s1[j + PART_B] = 0.08;
 
         this.s2.set(this.s1);
     }

@@ -1,10 +1,11 @@
   function drawGrid(){
     var floatsPerVertex = 7;
-    var xcount = 100;			// # of lines to draw in x,y to make the grid.
-    var ycount = 100;		
-    var xymax	= 50.0;			// grid size; extends to cover +/-xymax in x and y.
-    var xColr = new Float32Array([1.0, 1.0, 0.3]);	// bright yellow
-    var yColr = new Float32Array([0.5, 1.0, 0.5]);	// bright green.
+    var xcount = 1000;			// # of lines to draw in x,y to make the grid.
+    var ycount = 1000;		
+    var xymax	= 100.0;			// grid size; extends to cover +/-xymax in x and y.
+    var xColr = new Float32Array([0.2, 0.2, 0.2]);	// gray
+    //var yColr = new Float32Array([0.0, 1.0, 1.0]);	// bright blue
+    var yColr = new Float32Array([0.4, 0.0, 0.8]);	// purple
     
     // Create an (global) array to hold this ground-plane's vertices:
     gndVerts = new Float32Array(floatsPerVertex*2*(xcount+ycount));
