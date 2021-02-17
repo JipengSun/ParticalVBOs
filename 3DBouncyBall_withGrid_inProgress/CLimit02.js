@@ -120,7 +120,9 @@ const LIM_PULLEY  =15;    // Keep constant sum-of-distances for 3 particles
 
 const LIM_ZERO    =16;
 
-const LIM_MAXVAR  =17;    // Max number of possible limitType values available.
+const LIM_NOBOUNCY=17;
+
+const LIM_MAXVAR  =18;    // Max number of possible limitType values available.
 
 //=============================================================================
 //==============================================================================
@@ -150,9 +152,9 @@ function CLimit() {
   this.e1 = 0; this.e2 = 1; // particle-number (count from 0 in state variable)
                             // of the 2 particles constrained by this CLimit.
 
-  this.xMin = 0.0;   this.xMax = 0.0;     // define axis-aligned volume or box
-  this.yMin = 0.0;   this.yMax = 0.0;
-  this.zMin = 0.0;   this.zMax = 0.0;
+  this.xMin = -0.9;   this.xMax = 0.9;     // define axis-aligned volume or box
+  this.yMin = -0.9;   this.yMax = 0.9;
+  this.zMin = -0.9;   this.zMax = 0.9;
   this.poseMatrix = new Matrix4(); // Orthonormal matrix (translate,rotate ONLY:
                                   // NO SCALING!) that transforms world drawing 
                                   // axes to 'pose' axes where we define 'wall'

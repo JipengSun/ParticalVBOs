@@ -82,7 +82,7 @@ function CForcer() {
   this.d_fric;
     // F_BUBBLE Bubble-force variables:.........................................
   this.bub_radius = 1.0;                   // bubble radius
-  this.bub_ctr = new Vector4(0,0,0,1);     // bubble's center point position
+  this.bub_ctr = new Vector3([0,0,0]);     // bubble's center point position
   this.bub_force = 1.0;      // inward-force's strength when outside the bubble
 
     // F_SPRING Single Spring variables;........................................
@@ -102,10 +102,11 @@ function CForcer() {
   this.K_centering = 1;
 
   // F_WIND Variables
-  this.windPosition = new Vector3(0.0,0.0,0.0);
+  this.windPosition = new Vector3([0.0,0.0,0.0]);
   this.windRadius = 4;
   this.windStrength = 5;
-  this.windDirection = new Vector3(0.0,0.0,1.0);
+  this.windDirection = new Vector3([0.0,0.0,1.0]);
+
 }
 
 CForcer.prototype.printMe = function(opt_src) {

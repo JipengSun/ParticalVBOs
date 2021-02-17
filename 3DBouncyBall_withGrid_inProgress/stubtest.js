@@ -65,18 +65,24 @@ var rad = 1.5;
 // flame variables
 var firecount = 500;
 
+// Tornado variables
+var torcount = 500;
+var bubrad = 0.5;
+
 bouncyball = new VBOPartSys();
 springpair = new VBOPartSys();
 springmesh = new VBOPartSys();
 boids = new VBOPartSys();
 flame = new VBOPartSys();
+tornado = new VBOPartSys();
 
 ground = new groundVBO();
 cubeBouncyBall = new cubeVBO(1.0, 0.0, -6.0, 0.0);
-cubeSpringPair = new cubeVBO(1.0, 0.0, 6.0, 0.0);
+cubeSpringPair = new cubeVBO(1.0, 0.0, 9.0, 0.0);
 cubeBoids      = new cubeVBO(1.0, 0.0, -3.0, 0.0);
-cubeSpringMesh = new cubeVBO(1.0, 0.0, 3.0, 0.0);
+cubeSpringMesh = new cubeVBO(1.0, 0.0, 6.0, 0.0);
 cubeFlame      = new cubeVBO(1.0, 0.0, 0.0, 0.0);
+cubeTornado    = new cubeVBO(1.0, 0.0, 3.0, 0.0);
 
 function main(){
     g_canvas = document.getElementById('webgl');
@@ -104,14 +110,15 @@ function main(){
     cubeSpringMesh.init();
     cubeBoids.init();
     cubeFlame.init();
+    cubeTornado.init();
 
     bouncyball.initBouncy3D(bouncyballCount,0.0,-6.0,0.0);
     bouncyball.vboInit();
 
-    springpair.initSpringPair(2, 0.0, 6.0, 0.0, kspring, kdamp);
+    springpair.initSpringPair(2, 0.0, 9.0, 0.0, kspring, kdamp);
     springpair.vboInit();
 
-    springmesh.initSpringMesh(0.0, 3.0, 0.0, kspring, kdamp, height, width, restL);
+    springmesh.initSpringMesh(0.0, 6.0, 0.0, kspring, kdamp, height, width, restL);
     springmesh.vboInit();
 
     boids.initFlocking(partcount,0.0,-3.0,0.0,ka,kv,kc,rad,vel);
@@ -119,6 +126,9 @@ function main(){
 
     flame.initFireReeves(firecount,0.0,0.0,0.0);
     flame.vboInit();
+
+    tornado.initTornado(torcount,0.0,3.0,0.0,bubrad);
+    tornado.vboInit();
 
     var tick = function() {
         g_timeStep = animate();
@@ -190,6 +200,10 @@ function drawAll(){
         cubeFlame.adjust();
         cubeFlame.render();
 
+        cubeTornado.switchToMe();
+        cubeTornado.adjust();
+        cubeTornado.render();
+
         bouncyball.switchToMe();
         bouncyball.adjust();
         bouncyball.applyForces(bouncyball.s1,bouncyball.forceList);
@@ -235,6 +249,15 @@ function drawAll(){
         flame.render();
         flame.swap();
 
+        tornado.switchToMe();
+        tornado.adjust();
+        tornado.applyForces(tornado.s1,tornado.forceList);
+        tornado.dotFinder(tornado.s1dot,tornado.s1);
+        tornado.solver();
+        tornado.doConstraints(tornado.s1,tornado.s2,tornado.limitList);
+        tornado.render();
+        tornado.swap();
+
 
     }
     else{
@@ -262,6 +285,10 @@ function drawAll(){
         cubeFlame.adjust();
         cubeFlame.render();
 
+        cubeTornado.switchToMe();
+        cubeTornado.adjust();
+        cubeTornado.render();
+
         bouncyball.switchToMe()
         bouncyball.adjust()
         bouncyball.render()
@@ -281,6 +308,10 @@ function drawAll(){
         flame.switchToMe();
         flame.adjust();
         flame.render();
+
+        tornado.switchToMe();
+        tornado.adjust();
+        tornado.render();
 
     }
 
@@ -647,7 +678,7 @@ var springpairGui = function(){
         kspring = this.K_Spring;
         kdamp = this.K_Damp;
         springpair = new VBOPartSys();
-        springpair.initSpringPair(2,0.0,6.0,0.0,kspring,kdamp)
+        springpair.initSpringPair(2,0.0,9.0,0.0,kspring,kdamp)
         springpair.vboInit();
     }   
 }
@@ -687,7 +718,7 @@ var springmeshGui = function(){
         restL = this.Rest_Length;
 
         springmesh = new VBOPartSys();
-        springmesh.initSpringMesh(0.0, 3.0, 0.0, kspring, kdamp, height, width, restL);
+        springmesh.initSpringMesh(0.0, 6.0, 0.0, kspring, kdamp, height, width, restL);
         springmesh.vboInit();
     } 
 

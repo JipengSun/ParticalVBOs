@@ -862,6 +862,146 @@ VBOPartSys.prototype.initFireReeves = function(count,offset_x,offset_y,offset_z)
     }
     this.FSIZE = this.s1.BYTES_PER_ELEMENT;
 }
+VBOPartSys.prototype.initTornado = function(count,offset_x,offset_y,offset_z,bubrad){
+    this.partCount = count;
+    this.s1 = new Float32Array(this.partCount * PART_MAXVAR)
+    this.s2 = new Float32Array(this.partCount * PART_MAXVAR)
+    this.s1dot = new Float32Array(this.partCount * PART_MAXVAR)
+
+// Create & init all force-causing objects------------------------------------
+/*
+    fTmp = new CForcer();
+    fTmp.forceType = F_GRAV_E;
+    fTmp.targFirst = 0;
+    fTmp.targCount = -1;
+    this.forceList.push(fTmp);
+
+    fTmp = new CForcer();
+    fTmp.forceType = F_DRAG;
+    fTmp.Kdrag = 0.15;
+    fTmp.targFirst = 0;
+    fTmp.targCount = -1;
+    this.forceList.push(fTmp);
+
+*/  
+
+    fTmp = new CForcer();
+    fTmp.forceType = F_WIND;
+    fTmp.windPosition = new Vector3([offset_x,offset_y,offset_z-1]);
+    fTmp.windStrength = 15;
+    fTmp.windRadius = 0.5;
+    fTmp.windDirection = new Vector3([0.0,0.0,1.0])
+    fTmp.targFirst = 0;
+    fTmp.targCount = -1;
+    this.forceList.push(fTmp);
+
+    fTmp = new CForcer();
+    fTmp.forceType = F_BUBBLE;
+    fTmp.bub_ctr = new Vector3([offset_x,offset_y,offset_z-1]);
+    fTmp.bub_force = 4.0;
+    fTmp.bub_radius = 0.4;
+    fTmp.targFirst = 0;
+    fTmp.targCount = -1;
+    this.forceList.push(fTmp);
+
+
+    // Report:
+    console.log("PartSys.initBouncy3D() created PartSys.forceList[] array of ");
+    console.log("\t\t", this.forceList.length, "CForcer objects:");
+    for(i=0; i<this.forceList.length; i++) {
+        console.log("CForceList[",i,"]");
+        this.forceList[i].printMe();
+        }
+// Create & init all constraint-causing objects-------------------------------
+/*
+    cTmp = new CLimit();      // creat constraint-causing object, and
+    cTmp.hitType = HIT_BOUNCE_VEL;  // set how particles 'bounce' from its surface,
+    cTmp.limitType = LIM_VOL;       // confine particles inside axis-aligned
+                                    // rectangular volume that
+    cTmp.targFirst = 0;             // applies to ALL particles; starting at 0
+    cTmp.partCount = -1;            // through all the rest of them.
+    cTmp.xMin = -0.9 + offset_x; cTmp.xMax = 0.9 + offset_x;  // box extent:  +/- 1.0 box at origin
+    cTmp.yMin = -0.9 + offset_y; cTmp.yMax = 0.9 + offset_y;
+    cTmp.zMin = -0.9 + offset_z; cTmp.zMax = 0.9 + offset_z;
+    cTmp.Kresti = 1.0;              // bouncyness: coeff. of restitution.
+                                    // (and IGNORE all other CLimit members...)
+    this.limitList.push(cTmp);      // append this 'box' constraint object to the 
+ */   
+    
+    cTmp = new CLimit();
+    cTmp.limitType = LIM_ZERO;
+    cTmp.targFirst = 0;
+    cTmp.partCount = -1;
+    this.limitList.push(cTmp);
+
+    cTmp = new CLimit();
+    cTmp.limitType = LIM_NOBOUNCY;
+    cTmp.xMin = -0.9 + offset_x; cTmp.xMax = 0.9 + offset_x;  // box extent:  +/- 1.0 box at origin
+    cTmp.yMin = -0.9 + offset_y; cTmp.yMax = 0.9 + offset_y;
+    cTmp.zMin = -0.9 + offset_z; cTmp.zMax = 0.9 + offset_z;
+    cTmp.targFirst = 0;
+    cTmp.partCount = -1;
+    this.limitList.push(cTmp);
+
+
+    // Report:
+    console.log("PartSys.initBouncy3D() created PartSys.limitList[] array of ");
+    console.log("\t\t", this.limitList.length, "CLimit objects.");
+
+    this.INIT_VEL = 0;//0.15 * 60.0;		// initial velocity in meters/sec.
+	                  // adjust by ++Start, --Start buttons. Original value
+										// was 0.15 meters per timestep; multiply by 60 to get
+                    // meters per second.
+    this.drag = 0.8;// units-free air-drag (scales velocity); adjust by d/D keys
+    this.grav = 9.832;// gravity's acceleration(meter/sec^2); adjust by g/G keys.
+                        // on Earth surface, value is 9.832 meters/sec^2.
+    this.resti = 1; // units-free 'Coefficient of Restitution' for
+                        // inelastic collisions.  Sets the fraction of momentum
+                                            // (0.0 <= resti < 1.0) that remains after a ball
+                                            // 'bounces' on a wall or floor, as computed using
+                                            // velocity perpendicular to the surface.
+                                            // (Recall: momentum==mass*velocity.  If ball mass does
+                                            // not change, and the ball bounces off the x==0 wall,
+                                            // its x velocity xvel will change to -xvel * resti ).
+
+    //--------------------------init Particle System Controls:
+    this.runMode =  3;// Master Control: 0=reset; 1= pause; 2=step; 3=run
+    this.solvType = SOLV_BACK_EULER;// adjust by s/S keys.
+                        // SOLV_EULER (explicit, forward-time, as
+                                            // found in BouncyBall03.01BAD and BouncyBall04.01badMKS)
+                                            // SOLV_OLDGOOD for special-case implicit solver, reverse-time,
+                                            // as found in BouncyBall03.GOOD, BouncyBall04.goodMKS)
+    this.bounceType = 1;	// floor-bounce constraint type:
+                                            // ==0 for velocity-reversal, as in all previous versions
+                                            // ==1 for Chapter 3's collision resolution method, which
+                                            // uses an 'impulse' to cancel any velocity boost caused
+                                            // by falling below the floor.
+    this.diam = 100.0;
+    // INITIALIZE s1, s2:
+    var j = 0;
+    for (var i = 0; i < this.partCount; i += 1, j += PART_MAXVAR){
+        this.roundRand();
+        this.s1[j + PART_XPOS] = -0.0 + 0.2 * this.randX + offset_x;
+        this.s1[j + PART_YPOS] = -0.0 + 0.2 * this.randY + offset_y;
+        this.s1[j + PART_ZPOS] = -0.0 + 0.2 * this.randZ + offset_z;
+        this.s1[j + PART_WPOS] =  1.0;
+        this.roundRand();
+        this.s1[j + PART_XVEL] = this.INIT_VEL * (0.4 + 0.1*this.randX);
+        this.s1[j + PART_YVEL] = this.INIT_VEL * (0.4 + 0.1*this.randY);
+        this.s1[j + PART_ZVEL] = this.INIT_VEL * (0.4 + 0.1*this.randZ);
+        this.s1[j + PART_MASS] = 1.0;
+        this.s1[j + PART_DIAM] =  2.0 + 10*Math.random();
+        this.s1[j + PART_RENDMODE] = 0.0;
+        this.s1[j + PART_AGE] = 30 + 100*Math.random();
+
+        var cDist = cameraDist(this.s1[j + PART_XPOS],this.s1[j + PART_YPOS],this.s1[j + PART_ZPOS]) 
+        this.s1[j + PART_DIAM] = this.diam/(cDist + NU_EPSILON);
+
+        this.s2.set(this.s1);
+    }
+    this.FSIZE = this.s1.BYTES_PER_ELEMENT;
+
+}
 VBOPartSys.prototype.applyForces = function(s,fList){
     var j = 0;
     for (var i = 0; i < this.partCount; i += 1, j += PART_MAXVAR){
@@ -932,9 +1072,18 @@ VBOPartSys.prototype.applyForces = function(s,fList){
                     break;
                 case F_BUBBLE:    // Constant inward force (bub_force)to a 3D centerpoint
                                 // bub_ctr if particle is > bub_radius away from it.
-                    
-                    console.log("PartSys.applyForces(), fList[",k,"].forceType:",
-                                            fList[k].forceType, "NOT YET IMPLEMENTED!!");
+                    var j = m*PART_MAXVAR;
+                    for(;m<mmax;m++,j+=PART_MAXVAR){
+                        var partPoint = new Vector3([s[j+PART_XPOS],s[j+PART_YPOS],s[j+PART_ZPOS]]);
+                        res = pointsDist(fList[k].bub_ctr,partPoint);
+                        if(res[1] > fList[k].bub_radius){
+                            stretch = Math.pow((res[1] - fList[k].bub_radius),2);
+                            mag = stretch * fList[k].bub_force;
+                            s[j+PART_X_FTOT] += res[0].elements[0] * mag;
+                            s[j+PART_Y_FTOT] += res[0].elements[1] * mag;
+                            s[j+PART_Z_FTOT] += res[0].elements[2] * mag;
+                        }
+                    }
                     break;
                 case F_DRAG:      // viscous drag: force = -K_drag * velocity.
                     var j = m*PART_MAXVAR;  // state var array index for particle # m
@@ -1379,7 +1528,7 @@ VBOPartSys.prototype.doConstraints = function(sNow, sNext, cList) {
             case LIM_WALL:    // 2-sided wall: rectangular, axis-aligned, flat/2D,
                         // zero thickness, any desired size & position
 
-            break;
+                break;
             case LIM_DISC:    // 2-sided ellipsoidal wall, axis-aligned, flat/2D,
                             // zero thickness, any desired size & position
                 break;
@@ -1390,8 +1539,6 @@ VBOPartSys.prototype.doConstraints = function(sNow, sNext, cList) {
             case LIM_MAT_DISC:
                 break;
             case LIM_MAT_BALL:
-                break;
-            case LIM_MAT_DISC:
                 break;
             case LIM_ANCHOR:
                 for(var i = 0;i < cList[k].anchorsList.length;i++){
@@ -1413,6 +1560,52 @@ VBOPartSys.prototype.doConstraints = function(sNow, sNext, cList) {
             case LIM_RADIUS:
                 break;
             case LIM_PULLEY:
+                break;
+            case LIM_NOBOUNCY:
+                var j = m*PART_MAXVAR;  // state var array index for particle # m
+
+                for (; m < mmax; m++ , j += PART_MAXVAR) {
+                    if (sNext[j + PART_XPOS] <= cList[k].xMin) {
+                        sNext[j + PART_XPOS] = cList[k].xMin;
+                        sNext[j + PART_XVEL] = 0;
+                    }
+                    else if (sNext[j + PART_XPOS] >= cList[k].xMax) { // && this.s2[j + PART_XVEL] > 0.0) {
+                        // collision!
+                        sNext[j + PART_XPOS] = cList[k].xMax; // 1) resolve contact: put particle at wall.
+                        sNext[j + PART_XVEL] = 0;	// 2a) undo velocity change:
+                    }
+                    //--------  floor (-Y) wall  --------------------------------------------
+                    if (sNext[j + PART_YPOS] <= cList[k].yMin) { // && this.s2[j + PART_YVEL] < 0.0) {
+                        // collision! floor...
+                        sNext[j + PART_YPOS] = cList[k].yMin;// 1) resolve contact: put particle at wall.
+                        
+                        sNext[j + PART_YVEL] = 0;	// 2a) undo velocity change:
+                        
+                    }
+                    //--------  ceiling (+Y) wall  ------------------------------------------
+                    else if (sNext[j + PART_YPOS] >= cList[k].yMax) { // && sNext[j + PART_YVEL] > 0.0) {
+                    // collision! ceiling...
+                        sNext[j + PART_YPOS] = cList[k].yMax;// 1) resolve contact: put particle at wall.
+                        
+                        sNext[j + PART_YVEL] = 0;	// 2a) undo velocity change:
+                        
+                }
+                    //--------  near (-Z) wall  ---------------------------------------------
+                    if (sNext[j + PART_ZPOS] <= cList[k].zMin) { // && sNext[j + PART_ZVEL] < 0.0 ) {
+                    // collision!
+                        sNext[j + PART_ZPOS] = cList[k].zMin;// 1) resolve contact: put particle at wall.
+                        
+                        sNext[j + PART_ZVEL] = 0;  // 2a) undo velocity change:
+                }
+                //--------  far (+Z) wall  ----------------------------------------------
+                    else if (sNext[j + PART_ZPOS] >= cList[k].zMax) { // && sNext[j + PART_ZVEL] > 0.0) {
+                    // collision!
+                        sNext[j + PART_ZPOS] = cList[k].zMax; // 1) resolve contact: put particle at wall.
+                        
+                        sNext[j + PART_ZVEL] = 0;  // 2a) undo velocity change:
+                } // end of (+Z) wall constraint
+                
+            }
                 break;
             default:
                 console.log("!!!doConstraints() cList[", k, "] invalid limitType:", cList[k].limitType);
@@ -1711,6 +1904,9 @@ VBOPartSys.prototype.doConstraints1 = function(){
 */
 
 function pointsDist(point1, point2){
+    /*
+    point1 - point2. Return [sub,dist,dir].
+    */
     var sub = new Vector3([point1.elements[0] - point2.elements[0],point1.elements[1] - point2.elements[1],point1.elements[2] - point2.elements[2]])
     var distance = Math.sqrt(Math.pow(sub.elements[0],2) + Math.pow(sub.elements[1],2) + Math.pow(sub.elements[2],2));
     var dir = new Vector3([sub.elements[0]/(distance+NU_EPSILON),sub.elements[1]/(distance+NU_EPSILON),sub.elements[2]/(distance+NU_EPSILON)])
