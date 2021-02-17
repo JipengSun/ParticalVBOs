@@ -745,7 +745,7 @@ var flameGui = function(){
         firecount = this.particles;
 
         flame = new VBOPartSys();
-        flame = initFireReeves(firecount,0.0,0.0,0.0);
+        flame.initFireReeves(firecount,0.0,0.0,0.0);
         flame.vboInit();
     }
 }
