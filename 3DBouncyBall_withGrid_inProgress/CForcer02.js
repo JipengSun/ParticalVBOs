@@ -78,7 +78,8 @@ function CForcer() {
                             // (in Euler solver, which assumes constant force
                             // during each timestep, drag of 0.15 multiplies
                             // s1 velocity by (1-0.15)==0.85)
-
+  // F_FRIC Sliding Friction
+  this.d_fric;
     // F_BUBBLE Bubble-force variables:.........................................
   this.bub_radius = 1.0;                   // bubble radius
   this.bub_ctr = new Vector4(0,0,0,1);     // bubble's center point position
@@ -94,12 +95,17 @@ function CForcer() {
                             // applied along the direction of the spring.
   this.K_restLength;         // the zero-force length of this spring.
   
-  this.d_fric;
-
+  // F_BOIDS Variables
   this.effectRadius;
   this.K_avoid = 1;
   this.K_vel = 1;
   this.K_centering = 1;
+
+  // F_WIND Variables
+  this.windPosition = new Vector3(0.0,0.0,0.0);
+  this.windRadius = 4;
+  this.windStrength = 5;
+  this.windDirection = new Vector3(0.0,0.0,1.0);
 }
 
 CForcer.prototype.printMe = function(opt_src) {

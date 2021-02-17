@@ -44,34 +44,39 @@ var eyePosVector = new Vector3([x_Coordinate, y_Coordinate, z_Coordinate]);
 var bouncyballCount = 100;
 
 //spring pair variables
-var kspring = 10.0;
+var kspring = 20.0;
 var kdamp = 1.0;
 
 // spring mesh variables
-var kspring = 1.0;
-var kdamp = 10.0;
-var restL = 0.2;
+var kspring = 15.0;
+var kdamp = 2.5;
+var restL = 0.02;
 var width = 10;
-var height = 5;
+var height = 15;
 
-//boids variables
+// boids variables
 var partcount = 100;
-var vel = 10;
+var vel = 1;
 var ka = 3;
 var kv = 1;
 var kc = 4;
 var rad = 1.5;
 
+// flame variables
+var firecount = 500;
+
 bouncyball = new VBOPartSys();
 springpair = new VBOPartSys();
 springmesh = new VBOPartSys();
 boids = new VBOPartSys();
+flame = new VBOPartSys();
 
 ground = new groundVBO();
-cubeBouncyBall = new cubeVBO(1.0, 0.0, -3.0, 0.0);
+cubeBouncyBall = new cubeVBO(1.0, 0.0, -6.0, 0.0);
 cubeSpringPair = new cubeVBO(1.0, 0.0, 6.0, 0.0);
-cubeBoids      = new cubeVBO(1.0, 0.0, 0.0, 0.0);
+cubeBoids      = new cubeVBO(1.0, 0.0, -3.0, 0.0);
 cubeSpringMesh = new cubeVBO(1.0, 0.0, 3.0, 0.0);
+cubeFlame      = new cubeVBO(1.0, 0.0, 0.0, 0.0);
 
 function main(){
     g_canvas = document.getElementById('webgl');
@@ -98,15 +103,22 @@ function main(){
     cubeSpringPair.init();
     cubeSpringMesh.init();
     cubeBoids.init();
+    cubeFlame.init();
 
-    bouncyball.initBouncy3D(bouncyballCount,0.0,-3.0,0.0);
+    bouncyball.initBouncy3D(bouncyballCount,0.0,-6.0,0.0);
     bouncyball.vboInit();
+
     springpair.initSpringPair(2, 0.0, 6.0, 0.0, kspring, kdamp);
     springpair.vboInit();
+
     springmesh.initSpringMesh(0.0, 3.0, 0.0, kspring, kdamp, height, width, restL);
     springmesh.vboInit();
-    boids.initFlocking(partcount,0.0,0.0,0.0,ka,kv,kc,rad,vel);
+
+    boids.initFlocking(partcount,0.0,-3.0,0.0,ka,kv,kc,rad,vel);
     boids.vboInit();
+
+    flame.initFireReeves(firecount,0.0,0.0,0.0);
+    flame.vboInit();
 
     var tick = function() {
         g_timeStep = animate();
@@ -174,6 +186,10 @@ function drawAll(){
         cubeBoids.adjust();
         cubeBoids.render();
 
+        cubeFlame.switchToMe();
+        cubeFlame.adjust();
+        cubeFlame.render();
+
         bouncyball.switchToMe();
         bouncyball.adjust();
         bouncyball.applyForces(bouncyball.s1,bouncyball.forceList);
@@ -210,6 +226,15 @@ function drawAll(){
         boids.render();
         boids.swap();
 
+        flame.switchToMe();
+        flame.adjust();
+        flame.applyForces(flame.s1,flame.forceList);
+        flame.dotFinder(flame.s1dot,flame.s1);
+        flame.solver();
+        flame.doConstraints(flame.s1,flame.s2,flame.limitList);
+        flame.render();
+        flame.swap();
+
 
     }
     else{
@@ -233,6 +258,10 @@ function drawAll(){
         cubeBoids.adjust();
         cubeBoids.render();
 
+        cubeFlame.switchToMe();
+        cubeFlame.adjust();
+        cubeFlame.render();
+
         bouncyball.switchToMe()
         bouncyball.adjust()
         bouncyball.render()
@@ -248,6 +277,10 @@ function drawAll(){
         boids.switchToMe();
         boids.adjust();
         boids.render();
+
+        flame.switchToMe();
+        flame.adjust();
+        flame.render();
 
     }
 
@@ -311,11 +344,11 @@ function StrafingOnCamera(sign) {
     var perpendicular_axis = lookAtVector.cross(eyePosVectorNew).normalize();
 
 
-    x_Coordinate += sign * perpendicular_axis.elements[0] * g_timeStep * 0.001 * 10;
-    x_lookAt += sign * perpendicular_axis.elements[0] * g_timeStep * 0.001 * 10;
+    x_Coordinate += sign * perpendicular_axis.elements[0] * g_timeStep * 0.001 * 20;
+    x_lookAt += sign * perpendicular_axis.elements[0] * g_timeStep * 0.001 * 20;
 
-    y_lookAt += sign * perpendicular_axis.elements[1] * g_timeStep * 0.001 * 10;
-    y_Coordinate += sign * perpendicular_axis.elements[1] * g_timeStep * 0.001 * 10;
+    y_lookAt += sign * perpendicular_axis.elements[1] * g_timeStep * 0.001 * 20;
+    y_Coordinate += sign * perpendicular_axis.elements[1] * g_timeStep * 0.001 * 20;
 }
 
 function verticalMovement(sign) {
@@ -469,32 +502,18 @@ function myKeyDown(kev) {
     g_timeStepMin = g_timeStep;
     g_timeStepMax = g_timeStep;
 
-    boids_ControlBox  = false;
-
     switch(kev.code) {
         case "KeyW":
-            if (!boids_ControlBox)
-                translationOnCamera(1, false);
-            else
-                MoveAggressor(1, true);
+            translationOnCamera(1, false);
         break;
         case "KeyS":
-            if (!boids_ControlBox)
-                translationOnCamera(-1, false);
-            else
-                MoveAggressor(-1, true);
+            translationOnCamera(-1, false);
         break;
         case "KeyA":
-            if (!boids_ControlBox)
-                StrafingOnCamera(-1);
-            else
-                MoveAggressor(1, false);
+            StrafingOnCamera(-1);
         break;
         case "KeyD":
-            if (!boids_ControlBox)
-                StrafingOnCamera(1);
-            else
-                MoveAggressor(-1, false);
+            StrafingOnCamera(1);
         break;
     case "ArrowUp":
         rotationOnCamera(1, true);
@@ -512,108 +531,14 @@ function myKeyDown(kev) {
         updateRotAngleSign = 1;
         rotationOnCamera(1, false);
         break;
-    case "KeyL":
-        all_Particle_systems[current_part_sys].debug();
-        break;
-    case "Digit0":
-            all_Particle_systems[current_part_sys].bouncyball.runMode = 0;			// RESET!
-            document.getElementById('KeyDown').innerHTML =
-            'myKeyDown() digit 0 key. Run Mode 0: RESET!';    // print on webpage,
-        break;
-    case "Digit1":
-            all_Particle_systems[current_part_sys].bouncyball.runMode = 1;			// PAUSE!
-            document.getElementById('KeyDown').innerHTML =
-            'myKeyDown() digit 1 key. Run Mode 1: PAUSE!';    // print on webpage,
-        break;
-    case "Digit2":
-            all_Particle_systems[current_part_sys].bouncyball.runMode = 2;			// STEP!
-            document.getElementById('KeyDown').innerHTML =
-            'myKeyDown() digit 2 key. Run Mode 2: STEP!';     // print on webpage,
-        break;
-    case "Digit3":
-            all_Particle_systems[current_part_sys].bouncyball.runMode = 3;			// RESET!
-            document.getElementById('KeyDown').innerHTML =
-            'myKeyDown() digit 3 key. Run Mode 3: RUN!';      // print on webpage,
-            console.log("Run Mode 3: RUN!");                  // print on console.
-        break;
-    case "KeyB":                // Toggle floor-bounce constraint type
-            if(all_Particle_systems[current_part_sys].bouncyball.bounceType==0) all_Particle_systems[current_part_sys].bouncyball.bounceType = 1;   // impulsive vs simple
-            else all_Particle_systems[current_part_sys].bouncyball.bounceType = 0;
-            document.getElementById('KeyDown').innerHTML =
-            'myKeyDown() b/B key: toggle bounce mode.';	      // print on webpage,
-        break;
-    case "KeyC":                // Toggle screen-clearing to show 'trails'
-            g_isClear += 1;
-            if(g_isClear > 1) g_isClear = 0;
-            document.getElementById('KeyDown').innerHTML =
-            'myKeyDown() c/C key: toggle screen clear.';	 // print on webpage,
-        break;
-    case "KeyF":    // 'f' or 'F' to toggle particle fountain on/off
-            current_part_sys += 1;
-            if (current_part_sys >= all_Particle_systems.length) current_part_sys = 0;
-        break;
-    /*
     case "KeyP":
-        if(all_Particle_systems[current_part_sys].bouncyball.runMode == 3) all_Particle_systems[current_part_sys].bouncyball.runMode = 1;		// if running, pause
-                            else all_Particle_systems[current_part_sys].bouncyball.runMode = 3;		          // if paused, run.
-        //document.getElementById('KeyDown').innerHTML =
-            //  'myKeyDown() p/P key: toggle Pause/unPause!';    // print on webpage
-        //console.log("p/P key: toggle Pause/unPause!");   			// print on console,
-            break;
-    case "KeyR":    // r/R for RESET:
-        if(kev.shiftKey==false) {   // 'r' key: SOFT reset; boost velocity only
-            all_Particle_systems[current_part_sys].bouncyball.runMode = 3;  // RUN!
-        var j=0; // array index for particle i
-            for (var i = 0; i < all_Particle_systems[current_part_sys].bouncyball.partCount; i += 1, j += PART_MAXVAR) {
-                if (all_Particle_systems[current_part_sys].bouncyball.particleSystemType == SPRING_SOLID) {
-                    all_Particle_systems[current_part_sys].bouncyball.s1[j + PART_YPOS] += 1.0;
-                }
-                else {
-                    all_Particle_systems[current_part_sys].bouncyball.roundRand();  // make a spherical random var.
-                    if (all_Particle_systems[current_part_sys].bouncyball.s2[j + PART_XVEL] > 0.0) // ADD to positive velocity, and
-                        all_Particle_systems[current_part_sys].bouncyball.s1[j + PART_XVEL] += 1.7 + 0.4 * all_Particle_systems[current_part_sys].bouncyball.randX * all_Particle_systems[current_part_sys].bouncyball.INIT_VEL;
-                    // SUBTRACT from negative velocity:
-                    else all_Particle_systems[current_part_sys].bouncyball.s1[j + PART_XVEL] -= 1.7 + 0.4 * all_Particle_systems[current_part_sys].bouncyball.randX * all_Particle_systems[current_part_sys].bouncyball.INIT_VEL;
-
-                    if (all_Particle_systems[current_part_sys].bouncyball.s2[j + PART_YVEL] > 0.0)
-                        all_Particle_systems[current_part_sys].bouncyball.s1[j + PART_YVEL] += 1.7 + 0.4 * all_Particle_systems[current_part_sys].bouncyball.randY * all_Particle_systems[current_part_sys].bouncyball.INIT_VEL;
-                    else all_Particle_systems[current_part_sys].bouncyball.s1[j + PART_YVEL] -= 1.7 + 0.4 * all_Particle_systems[current_part_sys].bouncyball.randY * all_Particle_systems[current_part_sys].bouncyball.INIT_VEL;
-
-                    if (all_Particle_systems[current_part_sys].bouncyball.s2[j + PART_ZVEL] > 0.0)
-                        all_Particle_systems[current_part_sys].bouncyball.s1[j + PART_ZVEL] += 1.7 + 0.4 * all_Particle_systems[current_part_sys].bouncyball.randZ * all_Particle_systems[current_part_sys].bouncyball.INIT_VEL;
-                    else all_Particle_systems[current_part_sys].bouncyball.s1[j + PART_ZVEL] -= 1.7 + 0.4 * all_Particle_systems[current_part_sys].bouncyball.randZ * all_Particle_systems[current_part_sys].bouncyball.INIT_VEL;
-                }
-            }
-        }
-        else {      // HARD reset: position AND velocity, BOTH state vectors:
-            all_Particle_systems[current_part_sys].bouncyball.runMode = 0;			// RESET!
-        // Reset state vector s1 for ALL particles:
-        var j=0; // array index for particle i
-        for(var i = 0; i < all_Particle_systems[current_part_sys].bouncyball.partCount; i += 1, j+= PART_MAXVAR) {
-                all_Particle_systems[current_part_sys].bouncyball.roundRand();
-                    all_Particle_systems[current_part_sys].bouncyball.s2[j + PART_XPOS] =  -0.9;      // lower-left corner of CVV
-                    all_Particle_systems[current_part_sys].bouncyball.s2[j + PART_YPOS] =  -0.9;      // with a 0.1 margin
-                    all_Particle_systems[current_part_sys].bouncyball.s2[j + PART_ZPOS] =  0.0;
-                    all_Particle_systems[current_part_sys].bouncyball.s2[j + PART_XVEL] =  3.7 + 0.4*all_Particle_systems[current_part_sys].bouncyball.randX*all_Particle_systems[current_part_sys].bouncyball.INIT_VEL;
-                    all_Particle_systems[current_part_sys].bouncyball.s2[j + PART_YVEL] =  3.7 + 0.4*all_Particle_systems[current_part_sys].bouncyball.randY*all_Particle_systems[current_part_sys].bouncyball.INIT_VEL; // initial velocity in meters/sec.
-                all_Particle_systems[current_part_sys].bouncyball.s2[j + PART_ZVEL] =  3.7 + 0.4*all_Particle_systems[current_part_sys].bouncyball.randZ*all_Particle_systems[current_part_sys].bouncyball.INIT_VEL;
-                // do state-vector s2 as well: just copy all elements of the float32array.
-            all_Particle_systems[current_part_sys].bouncyball.s2.set(all_Particle_systems[current_part_sys].bouncyball.s1);
-        } // end for loop
-        } // end HARD reset
-        //document.getElementById('KeyDown').innerHTML =
-        //'myKeyDown() r/R key: soft/hard Reset.';	// print on webpage,
-        //console.log("r/R: soft/hard Reset");      // print on console,
-        break;
-        */
-       case "KeyP":
 	  if(bouncyball.runMode == 3) bouncyball.runMode = 1;		// if running, pause
 						  else bouncyball.runMode = 3;		          // if paused, run.
 	  document.getElementById('KeyDown').innerHTML =
 			  'myKeyDown() p/P key: toggle Pause/unPause!';    // print on webpage
 	  console.log("p/P key: toggle Pause/unPause!");   			// print on console,
-			break;
-        case "KeyR":    // r/R for RESET:
+		break;
+    case "KeyR":    // r/R for RESET:
         if(kev.shiftKey==false) {   // 'r' key: SOFT reset; boost velocity only
             bouncyball.runMode = 3;  // RUN!
 /*
@@ -654,21 +579,21 @@ function myKeyDown(kev) {
         'myKeyDown() r/R key: soft/hard Reset.';	// print on webpage,
         console.log("r/R: soft/hard Reset");      // print on console,
         break;
-        case "Space":
+    case "Space":
         bouncyball.runMode = 2;
         console.log(bouncyball.s1,bouncyball.s2)
             break;
-        case "ShiftLeft":
+    case "ShiftLeft":
             verticalMovement(1);
             break;
-        case "ControlLeft":
+    case "ControlLeft":
             verticalMovement(-1);
             break;
     default:
-            //document.getElementById('KeyDown').innerHTML =
-            //	'myKeyDown():UNUSED,keyCode='+kev.keyCode;
-            //console.log("UNUSED key:", kev.keyCode);
-        break;
+            document.getElementById('KeyDown').innerHTML =
+            	'myKeyDown():UNUSED,keyCode='+kev.keyCode;
+            console.log("UNUSED key:", kev.keyCode);
+    break;
     }
     }
 
@@ -710,7 +635,7 @@ var bouncyballGui = function(){
         }
         this.g_partA.initBouncy3D(count, this.shaderLoc);*/
         bouncyball = new VBOPartSys();
-        bouncyball.initBouncy3D(bouncyballCount,0.0,-3.0,0.0);
+        bouncyball.initBouncy3D(bouncyballCount,0.0,-6.0,0.0);
         bouncyball.vboInit();
     }   
 }
@@ -743,7 +668,7 @@ var boidsGui = function(){
         vel = this.Init_Velocity;
         
         boids = new VBOPartSys();
-        boids.initFlocking(partcount,0.0,0.0,0.0,0.0,ka,kv,kc,rad,vel);
+        boids.initFlocking(partcount,0.0,-3.0,0.0,ka,kv,kc,rad,vel);
         boids.vboInit();
     }
 }
