@@ -412,6 +412,8 @@ VBOPartSys.prototype.initSpringPair = function(count,offset_x,offset_y,offset_z,
     this.FSIZE = this.s1.BYTES_PER_ELEMENT;
     }
 VBOPartSys.prototype.initSpringMesh = function(offset_x,offset_y,offset_z,kspring,kdamp,height,width,restL){
+    width = Math.ceil(width);
+    height = Math.ceil(height);
     this.partCount = width * height;
     this.s1 = new Float32Array(this.partCount * PART_MAXVAR)
     this.s2 = new Float32Array(this.partCount * PART_MAXVAR)
@@ -588,7 +590,7 @@ VBOPartSys.prototype.initSpringMesh = function(offset_x,offset_y,offset_z,ksprin
     this.FSIZE = this.s1.BYTES_PER_ELEMENT;
 
 }
-VBOPartSys.prototype.initFlocking = function(count,offset_x,offset_y,offset_z,ka,kv,kc,rad){
+VBOPartSys.prototype.initFlocking = function(count,offset_x,offset_y,offset_z,ka,kv,kc,rad,vel){
     this.partCount = count;
     this.s1 = new Float32Array(this.partCount * PART_MAXVAR)
     this.s2 = new Float32Array(this.partCount * PART_MAXVAR)
@@ -674,7 +676,7 @@ VBOPartSys.prototype.initFlocking = function(count,offset_x,offset_y,offset_z,ka
     console.log("PartSys.initBouncy3D() created PartSys.limitList[] array of ");
     console.log("\t\t", this.limitList.length, "CLimit objects.");
 
-    this.INIT_VEL =  1//0.15 * 60.0;		// initial velocity in meters/sec.
+    this.INIT_VEL = vel;//0.15 * 60.0;		// initial velocity in meters/sec.
 	                  // adjust by ++Start, --Start buttons. Original value
 										// was 0.15 meters per timestep; multiply by 60 to get
                     // meters per second.

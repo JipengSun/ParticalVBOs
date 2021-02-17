@@ -56,10 +56,11 @@ var height = 5;
 
 //boids variables
 var partcount = 100;
+var vel = 10;
 var ka = 3;
 var kv = 1;
 var kc = 4;
-var rad = 0.5;
+var rad = 1.5;
 
 bouncyball = new VBOPartSys();
 springpair = new VBOPartSys();
@@ -104,7 +105,7 @@ function main(){
     springpair.vboInit();
     springmesh.initSpringMesh(0.0, 3.0, 0.0, kspring, kdamp, height, width, restL);
     springmesh.vboInit();
-    boids.initFlocking(partcount,0.0,0.0,0.0,ka,kv,kc,rad);
+    boids.initFlocking(partcount,0.0,0.0,0.0,ka,kv,kc,rad,vel);
     boids.vboInit();
 
     var tick = function() {
@@ -728,6 +729,7 @@ var springpairGui = function(){
 
 var boidsGui = function(){
     this.particles = partcount;
+    this.Init_Velocity = vel;
     this.K_avoidence = ka;
     this.K_velocity = kv;
     this.K_centering = kc;
@@ -738,16 +740,38 @@ var boidsGui = function(){
         kv = this.K_velocity;
         kc = this.K_centering;
         rad = this.Radius;
+        vel = this.Init_Velocity;
         
         boids = new VBOPartSys();
-        boids.initFlocking(partcount,0.0,0.0,0.0,0.0,ka,kv,kc,rad);
+        boids.initFlocking(partcount,0.0,0.0,0.0,0.0,ka,kv,kc,rad,vel);
         boids.vboInit();
     }
+}
+
+var springmeshGui = function(){
+    this.Height = height;
+    this.Width = width;
+    this.K_Spring = kspring;
+    this.K_Damp = kdamp;
+    this.Rest_Length = restL;
+    this.reload = function(){
+        kspring = this.K_Spring;
+        kdamp = this.K_Damp;
+        height = this.Height;
+        width = this.Width;
+        restL = this.Rest_Length;
+
+        springmesh = new VBOPartSys();
+        springmesh.initSpringMesh(0.0, 3.0, 0.0, kspring, kdamp, height, width, restL);
+        springmesh.vboInit();
+    } 
+
 }
 
 function windowLoad(){
     var bouncyballFolder = new bouncyballGui();
     var springpairFolder = new springpairGui();
+    var springmeshFolder = new springmeshGui();
     var boidsFolder = new boidsGui();
     var gui = new dat.GUI();
 
@@ -758,18 +782,29 @@ function windowLoad(){
 
     var normalSpringPair = gui.addFolder('Spring Pair');
     normalSpringPair.add(springpairFolder,'K_Spring',0.5,20);
-    normalSpringPair.add(springpairFolder,'K_Damp',0.5,10);
+    normalSpringPair.add(springpairFolder,'K_Damp',0.5,20);
     normalSpringPair.add(springpairFolder,'reload');
     normalSpringPair.open();
 
+    var normalSpringMesh = gui.addFolder('Spring Mesh');
+    normalSpringMesh.add(springmeshFolder,'Height');
+    normalSpringMesh.add(springmeshFolder,'Width');
+    normalSpringMesh.add(springmeshFolder,'Rest_Length',0.1,2);
+    normalSpringMesh.add(springmeshFolder,'K_Spring',0.5,20);
+    normalSpringMesh.add(springmeshFolder,'K_Damp',0.5,20);
+    normalSpringMesh.add(springmeshFolder,'reload');
+    normalSpringMesh.open();
+
+
     var normalboids = gui.addFolder('Boids');
     normalboids.add(boidsFolder,'particles');
+    normalboids.add(boidsFolder,'Init_Velocity');
     normalboids.add(boidsFolder,'K_avoidence',0.5,10);
     normalboids.add(boidsFolder,'K_velocity',0.5,10);
     normalboids.add(boidsFolder,'K_centering',0.5,10);
     normalboids.add(boidsFolder,'Radius',0.1,2);
-    normalboids.add(boidsFolder,'reload')
-    normalboids.open()
+    normalboids.add(boidsFolder,'reload');
+    normalboids.open();
 }
 
 
