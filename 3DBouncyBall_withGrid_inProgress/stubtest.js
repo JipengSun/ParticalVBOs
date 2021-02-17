@@ -100,7 +100,7 @@ function main(){
     window.addEventListener("click", myMouseClick);
     window.addEventListener("dblclick", myMouseDblClick);
     window.onload = windowLoad();
-    gl.clearColor(0.25, 0.25, 0.25, 1);	// RGBA color for clearing WebGL framebuffer
+    gl.clearColor(0, 0, 0, 1);	// RGBA color for clearing WebGL framebuffer
     gl.clear(gl.COLOR_BUFFER_BIT);		  // clear it once to set that color as bkgnd.
     gl.enable(gl.DEPTH_TEST);
 

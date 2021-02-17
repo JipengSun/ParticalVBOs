@@ -68,6 +68,12 @@ const SOLV_MAX         = 11;      // number of solver types available.
 const NU_EPSILON  = 10E-3;         // a tiny amount; a minimum vector length
                                     // to use to avoid 'divide-by-zero'
 
+const BOUNCY_BALL = 0;
+const SPRING_PAIR = 1;
+const SPRING_MESH = 2;
+const BOIDS       = 3;
+const TORNADO     = 4;
+const FLAME       = 5;
 //=============================================================================
 //==============================================================================
 
@@ -80,6 +86,7 @@ function VBOPartSys(){
   ' attribute float a_Size;                  \n' +
   ' uniform   mat4 u_ModelMat;               \n' +
   ' varying   vec4 v_Color;                  \n' +
+  ' attribute vec3 a_Color;                  \n' +
   ' void main() {                            \n' +
   '   gl_PointSize = a_Size;                 \n' +// TRY MAKING THIS LARGER...
   '   gl_Position = u_ModelMat * a_Position; \n' +
@@ -93,7 +100,7 @@ function VBOPartSys(){
   '     v_Color = vec4(1.0, 1.0, 1.0, 1.0);  \n' +  // white: 2==step
   '     }                                    \n' +
   '   else {                                 \n' +
-  '     v_Color = vec4(0.2, 1.0, 0.2, 1.0);        \n' +  // green: >=3 ==run
+  '     v_Color = vec4(a_Color, 1.0);  \n' +  // varing: >=3 ==run
   '     }                                    \n' +
   ' }                                        \n' ;
 
@@ -154,6 +161,11 @@ VBOPartSys.prototype.initBouncy3D = function(count,offset_x,offset_y,offset_z) {
     this.s1 = new Float32Array(this.partCount * PART_MAXVAR)
     this.s2 = new Float32Array(this.partCount * PART_MAXVAR)
     this.s1dot = new Float32Array(this.partCount * PART_MAXVAR)
+
+    this.partType = BOUNCY_BALL;
+    this.offset_x = offset_x;
+    this.offset_y = offset_y;
+    this.offset_z = offset_z;
 
 // Create & init all force-causing objects------------------------------------
 
@@ -271,6 +283,10 @@ VBOPartSys.prototype.initBouncy3D = function(count,offset_x,offset_y,offset_z) {
         this.s1[j + PART_DIAM] =  2.0 + 10*Math.random();
         this.s1[j + PART_RENDMODE] = 0.0;
         this.s1[j + PART_AGE] = 30 + 100*Math.random();
+        this.s1[j + PART_R] = 0.2;
+        this.s1[j + PART_G] = 1.0;
+        this.s1[j + PART_B] = 0.2;
+
 
         var cDist = cameraDist(this.s1[j + PART_XPOS],this.s1[j + PART_YPOS],this.s1[j + PART_ZPOS]) 
         this.s1[j + PART_DIAM] = this.diam/(cDist + NU_EPSILON);
@@ -286,6 +302,12 @@ VBOPartSys.prototype.initSpringPair = function(count,offset_x,offset_y,offset_z,
     this.s1 = new Float32Array(this.partCount * PART_MAXVAR)
     this.s2 = new Float32Array(this.partCount * PART_MAXVAR)
     this.s1dot = new Float32Array(this.partCount * PART_MAXVAR)
+
+    this.partType = SPRING_PAIR;
+    this.offset_x = offset_x;
+    this.offset_y = offset_y;
+    this.offset_z = offset_z;
+
 
 // Create & init all force-causing objects------------------------------------
 /*
@@ -406,6 +428,9 @@ VBOPartSys.prototype.initSpringPair = function(count,offset_x,offset_y,offset_z,
 
         var cDist = cameraDist(this.s1[j + PART_XPOS],this.s1[j + PART_YPOS],this.s1[j + PART_ZPOS]) 
         this.s1[j + PART_DIAM] = this.diam/(cDist + NU_EPSILON);
+        this.s1[j + PART_R] = 0.2;
+        this.s1[j + PART_G] = 1.0;
+        this.s1[j + PART_B] = 0.2;
 
         this.s2.set(this.s1);
     }
@@ -418,6 +443,11 @@ VBOPartSys.prototype.initSpringMesh = function(offset_x,offset_y,offset_z,ksprin
     this.s1 = new Float32Array(this.partCount * PART_MAXVAR)
     this.s2 = new Float32Array(this.partCount * PART_MAXVAR)
     this.s1dot = new Float32Array(this.partCount * PART_MAXVAR)
+
+    this.partType = SPRING_MESH;
+    this.offset_x = offset_x;
+    this.offset_y = offset_y;
+    this.offset_z = offset_z;
 
 // Create & init all force-causing objects------------------------------------
 /*
@@ -598,6 +628,9 @@ VBOPartSys.prototype.initSpringMesh = function(offset_x,offset_y,offset_z,ksprin
 
         var cDist = cameraDist(this.s1[j + PART_XPOS],this.s1[j + PART_YPOS],this.s1[j + PART_ZPOS]) 
         this.s1[j + PART_DIAM] = this.diam/(cDist + NU_EPSILON);
+        this.s1[j + PART_R] = 1.0;
+        this.s1[j + PART_G] = 0.0;
+        this.s1[j + PART_B] = 0.0;
 
         this.s2.set(this.s1);
     }
@@ -609,6 +642,11 @@ VBOPartSys.prototype.initFlocking = function(count,offset_x,offset_y,offset_z,ka
     this.s1 = new Float32Array(this.partCount * PART_MAXVAR)
     this.s2 = new Float32Array(this.partCount * PART_MAXVAR)
     this.s1dot = new Float32Array(this.partCount * PART_MAXVAR)
+
+    this.partType = BOIDS;
+    this.offset_x = offset_x;
+    this.offset_y = offset_y;
+    this.offset_z = offset_z;
 
 // Create & init all force-causing objects------------------------------------
 /*
@@ -738,6 +776,9 @@ VBOPartSys.prototype.initFlocking = function(count,offset_x,offset_y,offset_z,ka
 
         var cDist = cameraDist(this.s1[j + PART_XPOS],this.s1[j + PART_YPOS],this.s1[j + PART_ZPOS]) 
         this.s1[j + PART_DIAM] = this.diam/(cDist + NU_EPSILON);
+        this.s1[j + PART_R] = 1.0;
+        this.s1[j + PART_G] = 0.8;
+        this.s1[j + PART_B] = 0.0;
 
         this.s2.set(this.s1);
     }
@@ -749,6 +790,11 @@ VBOPartSys.prototype.initFireReeves = function(count,offset_x,offset_y,offset_z)
     this.s1 = new Float32Array(this.partCount * PART_MAXVAR)
     this.s2 = new Float32Array(this.partCount * PART_MAXVAR)
     this.s1dot = new Float32Array(this.partCount * PART_MAXVAR)
+
+    this.partType = FLAME;
+    this.offset_x = offset_x;
+    this.offset_y = offset_y;
+    this.offset_z = offset_z;
 
 // Create & init all force-causing objects------------------------------------
 /*
@@ -769,7 +815,7 @@ VBOPartSys.prototype.initFireReeves = function(count,offset_x,offset_y,offset_z)
     fTmp = new CForcer();
     fTmp.forceType = F_WIND;
     fTmp.windPosition = new Vector3([offset_x,offset_y,offset_z]);
-    fTmp.windStrength = 1;
+    fTmp.windStrength = 0.5;
     fTmp.windRadius = 4;
     fTmp.windDirection = new Vector3([0.0,0.0,1.0])
     fTmp.targFirst = 0;
@@ -784,6 +830,7 @@ VBOPartSys.prototype.initFireReeves = function(count,offset_x,offset_y,offset_z)
         this.forceList[i].printMe();
         }
 // Create & init all constraint-causing objects-------------------------------
+/*
     cTmp = new CLimit();      // creat constraint-causing object, and
     cTmp.hitType = HIT_BOUNCE_VEL;  // set how particles 'bounce' from its surface,
     cTmp.limitType = LIM_VOL;       // confine particles inside axis-aligned
@@ -796,10 +843,19 @@ VBOPartSys.prototype.initFireReeves = function(count,offset_x,offset_y,offset_z)
     cTmp.Kresti = 1.0;              // bouncyness: coeff. of restitution.
                                     // (and IGNORE all other CLimit members...)
     this.limitList.push(cTmp);      // append this 'box' constraint object to the 
-    
+    */
     
     cTmp = new CLimit();
     cTmp.limitType = LIM_ZERO;
+    cTmp.targFirst = 0;
+    cTmp.partCount = -1;
+    this.limitList.push(cTmp);
+
+    cTmp = new CLimit();
+    cTmp.limitType = LIM_NOBOUNCY;
+    cTmp.xMin = -0.9 + offset_x; cTmp.xMax = 0.9 + offset_x;  // box extent:  +/- 1.0 box at origin
+    cTmp.yMin = -0.9 + offset_y; cTmp.yMax = 0.9 + offset_y;
+    cTmp.zMin = -0.9 + offset_z; cTmp.zMax = 0.9 + offset_z;
     cTmp.targFirst = 0;
     cTmp.partCount = -1;
     this.limitList.push(cTmp);
@@ -844,7 +900,7 @@ VBOPartSys.prototype.initFireReeves = function(count,offset_x,offset_y,offset_z)
         this.roundRand();
         this.s1[j + PART_XPOS] = -0.0 + 0.2 * this.randX + offset_x;
         this.s1[j + PART_YPOS] = -0.0 + 0.2 * this.randY + offset_y;
-        this.s1[j + PART_ZPOS] = -0.0 + 0.2 * this.randZ + offset_z;
+        this.s1[j + PART_ZPOS] = -1.0 + 0.2 * this.randZ + offset_z;
         this.s1[j + PART_WPOS] =  1.0;
         this.roundRand();
         this.s1[j + PART_XVEL] = this.INIT_VEL * (0.4 + 0.1*this.randX);
@@ -853,7 +909,10 @@ VBOPartSys.prototype.initFireReeves = function(count,offset_x,offset_y,offset_z)
         this.s1[j + PART_MASS] = 1.0;
         this.s1[j + PART_DIAM] =  2.0 + 10*Math.random();
         this.s1[j + PART_RENDMODE] = 0.0;
-        this.s1[j + PART_AGE] = 30 + 100*Math.random();
+        this.s1[j + PART_AGE] = 10;
+        this.s1[j + PART_R] = 1.0;
+        this.s1[j + PART_G] = 1.0;
+        this.s1[j + PART_B] = 0.0;
 
         var cDist = cameraDist(this.s1[j + PART_XPOS],this.s1[j + PART_YPOS],this.s1[j + PART_ZPOS]) 
         this.s1[j + PART_DIAM] = this.diam/(cDist + NU_EPSILON);
@@ -867,6 +926,11 @@ VBOPartSys.prototype.initTornado = function(count,offset_x,offset_y,offset_z,bub
     this.s1 = new Float32Array(this.partCount * PART_MAXVAR)
     this.s2 = new Float32Array(this.partCount * PART_MAXVAR)
     this.s1dot = new Float32Array(this.partCount * PART_MAXVAR)
+
+    this.partType = TORNADO;
+    this.offset_x = offset_x;
+    this.offset_y = offset_y;
+    this.offset_z = offset_z;
 
 // Create & init all force-causing objects------------------------------------
 /*
@@ -996,6 +1060,9 @@ VBOPartSys.prototype.initTornado = function(count,offset_x,offset_y,offset_z,bub
 
         var cDist = cameraDist(this.s1[j + PART_XPOS],this.s1[j + PART_YPOS],this.s1[j + PART_ZPOS]) 
         this.s1[j + PART_DIAM] = this.diam/(cDist + NU_EPSILON);
+        this.s1[j + PART_R] = 0.75;
+        this.s1[j + PART_G] = 0.75;
+        this.s1[j + PART_B] = 0.75;
 
         this.s2.set(this.s1);
     }
@@ -1655,6 +1722,12 @@ VBOPartSys.prototype.vboInit = function(){
         return -1;
     }
 
+    this.a_ColorLoc = gl.getAttribLocation(this.shaderLoc,'a_Color');
+    if (this.a_ColorLoc < 0) {
+        console.log('PartSys.init() Failed to get the storage location of a_Color');
+        return -1;
+    }
+
     this.u_runModeID = gl.getUniformLocation(gl.program, 'u_runMode');
     if(!this.u_runModeID) {
         console.log('PartSys.init() Failed to get u_runMode variable location');
@@ -1695,6 +1768,16 @@ VBOPartSys.prototype.switchToMe = function(){
         PART_DIAM * this.FSIZE
     );
     gl.enableVertexAttribArray(this.a_SizeLoc);
+
+    gl.vertexAttribPointer(
+        this.a_ColorLoc,
+        3,
+        gl.FLOAT,
+        false,
+        PART_MAXVAR * this.FSIZE,
+        PART_R * this.FSIZE
+    );
+    gl.enableVertexAttribArray(this.a_ColorLoc);
 
     gl.uniform1i(this.u_runModeID, this.runMode);
 }
@@ -1738,6 +1821,41 @@ VBOPartSys.prototype.adjust = function(){
         //console.log(cDist);
         this.s1[j + PART_DIAM] = this.diam/(cDist + NU_EPSILON);
     }
+
+    if(this.partType == FLAME){
+        for(var i = 0, j = 0; i < this.partCount; i++, j+= PART_MAXVAR){
+            this.s1[j+PART_AGE] -= 1;
+            this.s1[j+PART_DIAM] *= 0.8;
+            this.s1[j+PART_MASS] *= 0.9;
+            this.s1[j+PART_R] *= 1;
+            this.s1[j+PART_G] *= 0.85;
+            this.s1[j+PART_B] *= 1;
+            console.log(this.s1[j+PART_AGE])
+            
+            if (this.s1[j + PART_AGE] <= 0){
+                this.s1[j + PART_XPOS] = -0.0 + 0.2 * this.randX + this.offset_x;
+                this.s1[j + PART_YPOS] = -0.0 + 0.2 * this.randY + this.offset_y;
+                this.s1[j + PART_ZPOS] = -0.8 + 0.2 * this.randZ + this.offset_z;
+                this.s1[j + PART_WPOS] = 1.0;      // position 'w' coordinate;
+                this.roundRand(); // Now choose random initial velocities too:
+                this.s1[j + PART_XVEL] = this.INIT_VEL * (0.0 + 0.2 * this.randX) * 0.5;
+                this.s1[j + PART_YVEL] = this.INIT_VEL * (0.5 + 0.2 * this.randY) * 0.6;
+                this.s1[j + PART_ZVEL] = this.INIT_VEL * (0.0 + 0.2 * this.randZ) * 0.5;
+                this.s1[j + PART_MASS] = 0.2;      // mass, in kg.
+                var cDist = cameraDist(this.s1[j + PART_XPOS],this.s1[j + PART_YPOS],this.s1[j + PART_ZPOS]) 
+                this.s1[j + PART_DIAM] = this.diam/(cDist + NU_EPSILON);
+                this.s1[j + PART_RENDMODE] = 0.0;
+                
+                this.s1[j + PART_R] = 0.9 + Math.random() * 0.1;
+                this.s1[j + PART_G] = 0.9 + Math.random() * 0.1;
+                this.s1[j + PART_B] = 0.1;
+                this.s1[j + PART_AGE] = 6 + 10 * Math.random();
+                
+            }
+            
+        }
+    }
+
 }
 
 
