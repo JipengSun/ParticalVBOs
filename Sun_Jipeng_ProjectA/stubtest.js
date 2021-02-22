@@ -773,7 +773,7 @@ function windowLoad(){
     var normalSpringMesh = gui.addFolder('Spring Mesh');
     normalSpringMesh.add(springmeshFolder,'Height');
     normalSpringMesh.add(springmeshFolder,'Width');
-    normalSpringMesh.add(springmeshFolder,'Rest_Length',0.1,2);
+    normalSpringMesh.add(springmeshFolder,'Rest_Length',0.01,1);
     normalSpringMesh.add(springmeshFolder,'K_Spring',0.5,20);
     normalSpringMesh.add(springmeshFolder,'K_Damp',0.5,20);
     normalSpringMesh.add(springmeshFolder,'reload');
