@@ -1830,7 +1830,7 @@ VBOPartSys.prototype.adjust = function(){
             this.s1[j+PART_R] *= 1;
             this.s1[j+PART_G] *= 0.85;
             this.s1[j+PART_B] *= 1;
-            console.log(this.s1[j+PART_AGE])
+            //console.log(this.s1[j+PART_AGE])
             
             if (this.s1[j + PART_AGE] <= 0){
                 this.s1[j + PART_XPOS] = -0.0 + 0.2 * this.randX + this.offset_x;

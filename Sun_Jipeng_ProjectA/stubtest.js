@@ -23,13 +23,19 @@ var g_timeStep = 1000.0/60.0;			// current timestep in milliseconds (init to 1/6
 var g_timeStepMin = g_timeStep;   //holds min,max timestep values since last keypress.
 var g_timeStepMax = g_timeStep;
 
+var rad = 20;
+var theta = 0;
+var delta_z = 0;
+
 var g_worldMat = new Matrix4();
 var current_rotation = 0;
 var x_Coordinate = -25;
 var y_Coordinate = 0;
 var z_Coordinate = 0.5;
-var x_lookAt = 0;
-var y_lookAt = 0;
+
+
+var x_lookAt = x_Coordinate + rad;
+var y_lookAt = y_Coordinate;
 var z_lookAt = z_Coordinate;
 
 var g_rotAngle = 0.0;
@@ -336,78 +342,71 @@ function setCamera() {
     //------------END COPY
 
     }
-
-function MoveCameraLocation(sign, displacement) {
-    x_Coordinate = x_Coordinate + sign * displacement[0] * g_timeStep * 0.001 * 15;
-    y_Coordinate = y_Coordinate + sign * displacement[1] * g_timeStep * 0.001 * 15;
-    z_Coordinate = z_Coordinate + sign * displacement[2] * g_timeStep * 0.001 * 15;
-
-    Range(x_Coordinate + sign * displacement[0] * g_timeStep * 0.001 * 10, x_Coordinate + sign * displacement[0] * g_timeStep * 0.001 * 15, x_Coordinate);
-    Range(y_Coordinate + sign * displacement[1] * g_timeStep * 0.001 * 10, y_Coordinate + sign * displacement[1] * g_timeStep * 0.001 * 15, y_Coordinate);
-    Range(z_Coordinate + sign * displacement[2] * g_timeStep * 0.001 * 10, z_Coordinate + sign * displacement[2] * g_timeStep * 0.001 * 15, z_Coordinate);
-
-  eyePosVector = new Vector3([x_Coordinate, y_Coordinate, z_Coordinate]);
+function moveForwardBackward(sign){
+    var moveVel = 0.2;
+    
+    Dx = x_lookAt - x_Coordinate;
+    Dy = y_lookAt - y_Coordinate;
+    Dz = z_lookAt - z_Coordinate;
+    var D = rad * moveVel;
+    x_Coordinate += sign * Dx * moveVel;
+    y_Coordinate += sign * Dy * moveVel;
+    z_Coordinate += sign * Dz * moveVel;
+    x_lookAt += sign * Dx * moveVel;
+    y_lookAt += sign * Dy * moveVel;
+    z_lookAt += sign * Dz * moveVel;
 }
 
-function MoveLookAtPoint(sign, displacement) {
-    x_lookAt = x_lookAt + sign * displacement[0] * g_timeStep * 0.001 * 10;
-    y_lookAt = y_lookAt + sign * displacement[1] * g_timeStep * 0.001 * 10;
-    z_lookAt = z_lookAt + sign * displacement[2] * g_timeStep * 0.001 * 10;
+function moveLeftRight(sign){
+    var moveVel = 0.1;
 
-    Range(x_lookAt + sign * displacement[0] * g_timeStep * 0.001 * 10, x_lookAt + sign * displacement[0] * g_timeStep * 0.001 * 10, x_lookAt);
-    Range(y_lookAt + sign * displacement[1] * g_timeStep * 0.001 * 10, y_lookAt + sign * displacement[1] * g_timeStep * 0.001 * 10, y_lookAt);
-    Range(z_lookAt + sign * displacement[2] * g_timeStep * 0.001 * 10, z_lookAt + sign * displacement[2] * g_timeStep * 0.001 * 10, z_lookAt);
+    v1 = new Vector3([x_lookAt-x_Coordinate,y_lookAt-y_Coordinate,z_lookAt-z_Coordinate]);
+    v2 = new Vector3([0,0,1]);
 
-    lookAtVector = new Vector3([x_lookAt, y_lookAt, z_lookAt]);
+    res = cross(v2,v1);
+    dir = res[2];
+    x_Coordinate += sign * dir.elements[0] * moveVel;
+    y_Coordinate += sign * dir.elements[1] * moveVel;
+    z_Coordinate += sign * dir.elements[2] * moveVel;
+    x_lookAt += sign * dir.elements[0] * moveVel;
+    y_lookAt += sign * dir.elements[1] * moveVel;
+    z_lookAt += sign * dir.elements[2] * moveVel;
+    
 }
 
-function translationOnCamera(sign) {
-  var displacement = new Float32Array([(x_lookAt - x_Coordinate) * 0.2,
-                                       (y_lookAt - y_Coordinate) * 0.3,
-                                       (z_lookAt - z_Coordinate) * 0.2]);
-
-  MoveCameraLocation(sign, displacement);
-  MoveLookAtPoint(sign, displacement);
+function moveAimLeftRight(sign){
+    rotAngle = 0.05;
+    theta += rotAngle * sign;
+    x_lookAt = x_Coordinate + Math.cos(theta) * rad;
+    y_lookAt = y_Coordinate + Math.sin(theta) * rad;
 }
 
-function StrafingOnCamera(sign) {
-    var eyePosVectorNew = new Vector3([eyePosVector.elements[0], eyePosVector.elements[1], eyePosVector.elements[2]]);
-    var perpendicular_axis = lookAtVector.cross(eyePosVectorNew).normalize();
-
-
-    x_Coordinate += sign * perpendicular_axis.elements[0] * g_timeStep * 0.001 * 20;
-    x_lookAt += sign * perpendicular_axis.elements[0] * g_timeStep * 0.001 * 20;
-
-    y_lookAt += sign * perpendicular_axis.elements[1] * g_timeStep * 0.001 * 20;
-    y_Coordinate += sign * perpendicular_axis.elements[1] * g_timeStep * 0.001 * 20;
+function moveAimUpDown(sign){
+    rotAngle = 0.05;
+    delta_z += rotAngle * sign;
+    //console.log(delta_z)
+    z_lookAt = z_Coordinate + Math.sin(delta_z) * rad;
+    x_lookAt = x_Coordinate + Math.cos(delta_z) * rad;
 }
 
-function verticalMovement(sign) {
-    var vertical_axis = eyePosVector.normalize();
-    z_Coordinate += sign * vertical_axis.elements[2] * g_timeStep * 0.001 * 10;
-    z_lookAt += sign * vertical_axis.elements[2] * g_timeStep * 0.001 * 10;
+function cross(v1,v2){
+    x1 = v1.elements[0];
+    y1 = v1.elements[1];
+    z1 = v1.elements[2];
+
+    x2 = v2.elements[0];
+    y2 = v2.elements[1];
+    z2 = v2.elements[2];
+
+    normal = new Vector3([(y1*z2-y2*z1),-(x1*z2-x2*z1),(x1*y2-x2*y1)]);
+    mag = Math.sqrt(Math.pow(normal.elements[0],2)+Math.pow(normal.elements[1],2)+Math.pow(normal.elements[2],2));
+    dir = new Vector3([normal.elements[0]/mag,normal.elements[1]/mag,normal.elements[2]/mag]);
+    return [normal,mag,dir]
+
+
 }
 
-function rotationOnCamera(sign, isVerticalAxis) {
-    if (isVerticalAxis)
-        z_lookAt += sign * g_timeStep * 0.001 * 10;
-  else
-    {
 
-        eyePosVector = new Vector3([x_Coordinate, y_Coordinate, z_Coordinate]);
-        lookAtVector = new Vector3([x_lookAt, y_lookAt, z_lookAt]);
-
-        lookdir = eyePosVector.subtract(lookAtVector).normalize();
-
-
-        x_lookAt = Math.cos(g_rotAngle * 0.05 * sign) + x_Coordinate;
-        y_lookAt = y_Coordinate + Math.sin(g_rotAngle * 0.05 * sign);
-
-  }
-
-  eyePosVector = new Vector3([x_Coordinate, y_Coordinate, z_Coordinate]);
-  lookAtVector = new Vector3([x_lookAt, y_lookAt, z_lookAt]);
-}
 //===================Mouse and Keyboard event-handling Callbacks===============
 //=============================================================================
 function myMouseDown(ev) {
@@ -535,33 +534,44 @@ function myKeyDown(kev) {
 
     switch(kev.code) {
         case "KeyW":
-            translationOnCamera(1, false);
+            //translationOnCamera(1, false);
+            moveForwardBackward(1);
         break;
         case "KeyS":
-            translationOnCamera(-1, false);
+            moveForwardBackward(-1);
         break;
         case "KeyA":
-            StrafingOnCamera(-1);
+            moveLeftRight(1);
+            //StrafingOnCamera(-1);
         break;
         case "KeyD":
-            StrafingOnCamera(1);
+            moveLeftRight(-1);
+            //StrafingOnCamera(1);
         break;
-    case "ArrowUp":
-        rotationOnCamera(1, true);
-        break;
-    case "ArrowDown":
-        rotationOnCamera(-1, true);
-        break;
-    case "ArrowRight":
-        updateRotAngle = true;
-        updateRotAngleSign = -1;
-        rotationOnCamera(1, false);
-        break;
-    case "ArrowLeft" :
-        updateRotAngle = true;
-        updateRotAngleSign = 1;
-        rotationOnCamera(1, false);
-        break;
+        case "ArrowUp":
+            //rotationOnCamera(1, true);
+            moveAimUpDown(1);
+            break;
+        case "ArrowDown":
+            moveAimUpDown(-1);
+            //rotationOnCamera(-1, true);
+            break;
+        case "ArrowLeft" :
+            /*
+            updateRotAngle = true;
+            updateRotAngleSign = 1;
+            rotationOnCamera(1, false);
+            */
+            moveAimLeftRight(1);
+            break;
+        case "ArrowRight":
+            moveAimLeftRight(-1);
+            /*
+            updateRotAngle = true;
+            updateRotAngleSign = -1;
+            rotationOnCamera(1, false);
+            */
+            break;
     case "KeyP":
 	  if(bouncyball.runMode == 3) bouncyball.runMode = 1;		// if running, pause
 						  else bouncyball.runMode = 3;		          // if paused, run.
@@ -647,11 +657,6 @@ function myKeyUp(kev) {
 
 }
 
-function Range(min, max, number) {
-    if (number < min) return min;
-    else if (number > max) return max;
-    else return number;
-}
 
 
 //Control panel using google dat.gui
