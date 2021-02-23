@@ -29,8 +29,8 @@ var delta_z = 0;
 
 var g_worldMat = new Matrix4();
 var current_rotation = 0;
-var x_Coordinate = -25;
-var y_Coordinate = 0;
+var x_Coordinate = -35;
+var y_Coordinate = 1.5;
 var z_Coordinate = 0.5;
 
 
@@ -46,12 +46,15 @@ var g_angleRate = 10.0;
 var lookAtVector = new Vector3([x_lookAt, y_lookAt, z_lookAt]);
 var eyePosVector = new Vector3([x_Coordinate, y_Coordinate, z_Coordinate]);
 
+solverType = 5;
 //bouncyball variables
 var bouncyballCount = 100;
+var bouncyGravity = true;
 
 //spring pair variables
 var kspring = 20.0;
 var kdamp = 1.0;
+var springpairGravity = true;
 
 // spring mesh variables
 var kspring = 15.0;
@@ -59,6 +62,8 @@ var kdamp = 2.5;
 var restL = 0.02;
 var width = 10;
 var height = 15;
+var windForce = 0.1;
+var springmeshGravity = false;
 
 // boids variables
 var partcount = 100;
@@ -73,7 +78,6 @@ var firecount = 500;
 
 // Tornado variables
 var torcount = 500;
-var bubrad = 0.5;
 
 bouncyball = new VBOPartSys();
 springpair = new VBOPartSys();
@@ -118,22 +122,22 @@ function main(){
     cubeFlame.init();
     cubeTornado.init();
 
-    bouncyball.initBouncy3D(bouncyballCount,0.0,-6.0,0.0);
+    bouncyball.initBouncy3D(bouncyballCount,0.0,-6.0,0.0,bouncyGravity,solverType);
     bouncyball.vboInit();
 
-    springpair.initSpringPair(2, 0.0, 9.0, 0.0, kspring, kdamp);
+    springpair.initSpringPair(2, 0.0, 9.0, 0.0, kspring, kdamp,springpairGravity, solverType);
     springpair.vboInit();
 
-    springmesh.initSpringMesh(0.0, 6.0, 0.0, kspring, kdamp, height, width, restL);
+    springmesh.initSpringMesh(0.0, 6.0, 0.0, kspring, kdamp, height, width, restL, windForce, springmeshGravity, solverType);
     springmesh.vboInit();
 
-    boids.initFlocking(partcount,0.0,-3.0,0.0,ka,kv,kc,rad,vel);
+    boids.initFlocking(partcount,0.0,-3.0,0.0,ka,kv,kc,rad,vel,solverType);
     boids.vboInit();
 
-    flame.initFireReeves(firecount,0.0,0.0,0.0);
+    flame.initFireReeves(firecount,0.0,0.0,0.0,solverType);
     flame.vboInit();
 
-    tornado.initTornado(torcount,0.0,3.0,0.0,bubrad);
+    tornado.initTornado(torcount,0.0,3.0,0.0,solverType);
     tornado.vboInit();
 
     var tick = function() {
@@ -658,22 +662,27 @@ function myKeyUp(kev) {
 }
 
 
+function ChangeSolvers(index) {
+    var solvers = new Uint8Array([SOLV_EULER, SOLV_MIDPOINT, SOLV_ADAMS_BASH, SOLV_RUNGEKUTTA, SOLV_OLDGOOD, SOLV_BACK_EULER, SOLV_BACK_MIDPT, SOLV_BACK_ADBASH, SOLV_VERLET]);
+    all_Particle_systems[current_part_sys].g_partA.solvType = solvers[index];
+}
 
 //Control panel using google dat.gui
 var bouncyballGui = function(){
     this.particles = bouncyballCount;
+    this.AddGravity = bouncyGravity;
+    //var solvers = new Uint8Array([SOLV_EULER, SOLV_MIDPOINT, SOLV_ADAMS_BASH, SOLV_RUNGEKUTTA, SOLV_OLDGOOD, SOLV_BACK_EULER, SOLV_BACK_MIDPT, SOLV_BACK_ADBASH, SOLV_VERLET]);
+    this.ChangeSolver= solverType;
 
     this.reload = function(){
         bouncyballCount = this.particles;
-        /*this.shaderLoc = createProgram(gl, this.VSHADER_SOURCE_PARTICLE, this.FSHADER_SOURCE_PARTICLE);
-        if (!this.shaderLoc) {
-            console.log(this.constructor.name + 
-                        '.init() failed to create executable Shaders on the GPU. Bye!');
-            return;
-        }
-        this.g_partA.initBouncy3D(count, this.shaderLoc);*/
+        bouncyGravity = this.AddGravity;
+        var solvers = new Uint8Array([SOLV_EULER, SOLV_MIDPOINT, SOLV_ADAMS_BASH, SOLV_RUNGEKUTTA, SOLV_OLDGOOD, SOLV_BACK_EULER, SOLV_BACK_MIDPT, SOLV_BACK_ADBASH, SOLV_VERLET]);
+        solverType = solvers[this.ChangeSolver];
+        console.log(solverType);
+
         bouncyball = new VBOPartSys();
-        bouncyball.initBouncy3D(bouncyballCount,0.0,-6.0,0.0);
+        bouncyball.initBouncy3D(bouncyballCount,0.0,-6.0,0.0,bouncyGravity,solverType);
         bouncyball.vboInit();
     }   
 }
@@ -681,11 +690,17 @@ var bouncyballGui = function(){
 var springpairGui = function(){
     this.K_Spring = kspring;
     this.K_Damp = kdamp;
+    this.AddGravity = springpairGravity;
+    this.ChangeSolver= solverType;
     this.reload = function(){
         kspring = this.K_Spring;
         kdamp = this.K_Damp;
+        springpairGravity = this.AddGravity;
+        var solvers = new Uint8Array([SOLV_EULER, SOLV_MIDPOINT, SOLV_ADAMS_BASH, SOLV_RUNGEKUTTA, SOLV_OLDGOOD, SOLV_BACK_EULER, SOLV_BACK_MIDPT, SOLV_BACK_ADBASH, SOLV_VERLET]);
+        solverType = solvers[this.ChangeSolver];
+
         springpair = new VBOPartSys();
-        springpair.initSpringPair(2,0.0,9.0,0.0,kspring,kdamp)
+        springpair.initSpringPair(2,0.0,9.0,0.0,kspring,kdamp,springpairGravity,solverType);
         springpair.vboInit();
     }   
 }
@@ -697,6 +712,7 @@ var boidsGui = function(){
     this.K_velocity = kv;
     this.K_centering = kc;
     this.Radius = rad;
+    this.ChangeSolver= solverType;
     this.reload = function(){
         partcount = this.particles;
         ka = this.K_avoidence;
@@ -704,9 +720,11 @@ var boidsGui = function(){
         kc = this.K_centering;
         rad = this.Radius;
         vel = this.Init_Velocity;
+        var solvers = new Uint8Array([SOLV_EULER, SOLV_MIDPOINT, SOLV_ADAMS_BASH, SOLV_RUNGEKUTTA, SOLV_OLDGOOD, SOLV_BACK_EULER, SOLV_BACK_MIDPT, SOLV_BACK_ADBASH, SOLV_VERLET]);
+        solverType = solvers[this.ChangeSolver];
         
         boids = new VBOPartSys();
-        boids.initFlocking(partcount,0.0,-3.0,0.0,ka,kv,kc,rad,vel);
+        boids.initFlocking(partcount,0.0,-3.0,0.0,ka,kv,kc,rad,vel,solverType);
         boids.vboInit();
     }
 }
@@ -717,15 +735,22 @@ var springmeshGui = function(){
     this.K_Spring = kspring;
     this.K_Damp = kdamp;
     this.Rest_Length = restL;
+    this.Wind_Strength = windForce;
+    this.AddGravity = springmeshGravity;
+    this.ChangeSolver= solverType;
     this.reload = function(){
         kspring = this.K_Spring;
         kdamp = this.K_Damp;
         height = this.Height;
         width = this.Width;
         restL = this.Rest_Length;
+        windForce = this.Wind_Strength;
+        springmeshGravity = this.AddGravity;
+        var solvers = new Uint8Array([SOLV_EULER, SOLV_MIDPOINT, SOLV_ADAMS_BASH, SOLV_RUNGEKUTTA, SOLV_OLDGOOD, SOLV_BACK_EULER, SOLV_BACK_MIDPT, SOLV_BACK_ADBASH, SOLV_VERLET]);
+        solverType = solvers[this.ChangeSolver];
 
         springmesh = new VBOPartSys();
-        springmesh.initSpringMesh(0.0, 6.0, 0.0, kspring, kdamp, height, width, restL);
+        springmesh.initSpringMesh(0.0, 6.0, 0.0, kspring, kdamp, height, width, restL, windForce, springmeshGravity, solverType);
         springmesh.vboInit();
     } 
 
@@ -733,27 +758,33 @@ var springmeshGui = function(){
 
 var tornadoGui = function(){
     this.particles = torcount;
-    this.Bubble_Radius = bubrad;
+    this.ChangeSolver= solverType;
     this.reload = function(){
         torcount = this.particles;
         bubrad = this.Bubble_Radius;
+        var solvers = new Uint8Array([SOLV_EULER, SOLV_MIDPOINT, SOLV_ADAMS_BASH, SOLV_RUNGEKUTTA, SOLV_OLDGOOD, SOLV_BACK_EULER, SOLV_BACK_MIDPT, SOLV_BACK_ADBASH, SOLV_VERLET]);
+        solverType = solvers[this.ChangeSolver];
 
         tornado = new VBOPartSys();
-        tornado.initTornado(torcount,0.0,3.0,0.0,bubrad);
+        tornado.initTornado(torcount,0.0,3.0,0.0,solverType);
         tornado.vboInit();
     }
 }
 
 var flameGui = function(){
     this.particles = firecount;
+    this.ChangeSolver= solverType;
     this.reload = function(){
         firecount = this.particles;
+        var solvers = new Uint8Array([SOLV_EULER, SOLV_MIDPOINT, SOLV_ADAMS_BASH, SOLV_RUNGEKUTTA, SOLV_OLDGOOD, SOLV_BACK_EULER, SOLV_BACK_MIDPT, SOLV_BACK_ADBASH, SOLV_VERLET]);
+        solverType = solvers[this.ChangeSolver];
 
         flame = new VBOPartSys();
-        flame.initFireReeves(firecount,0.0,0.0,0.0);
+        flame.initFireReeves(firecount,0.0,0.0,0.0,solverType);
         flame.vboInit();
     }
 }
+
 
 function windowLoad(){
     var bouncyballFolder = new bouncyballGui();
@@ -764,47 +795,57 @@ function windowLoad(){
     var flameFolder = new flameGui();
     var gui = new dat.GUI();
 
-    var normalBouncyball = gui.addFolder('Bouncy Balls');
-    normalBouncyball.add(bouncyballFolder, 'particles');
-    normalBouncyball.add(bouncyballFolder, 'reload');
-    normalBouncyball.open();
-
-    var normalSpringPair = gui.addFolder('Spring Pair');
+    var normalSpringPair = gui.addFolder('Spring Pair #1');
     normalSpringPair.add(springpairFolder,'K_Spring',0.5,20);
     normalSpringPair.add(springpairFolder,'K_Damp',0.5,20);
+    normalSpringPair.add(springpairFolder,'AddGravity');
+    normalSpringPair.add(springpairFolder,'ChangeSolver',{'SOLV_EULER':SOLV_EULER,'SOLV_MIDPOINT':SOLV_MIDPOINT,'SOLV_BACK_EULER':SOLV_BACK_EULER,'SOLV_BACK_MIDPT':SOLV_BACK_MIDPT});
     normalSpringPair.add(springpairFolder,'reload');
-    normalSpringPair.open();
+    //normalSpringPair.open();
 
-    var normalSpringMesh = gui.addFolder('Spring Mesh');
+
+    var normalSpringMesh = gui.addFolder('Spring Mesh #2');
     normalSpringMesh.add(springmeshFolder,'Height');
     normalSpringMesh.add(springmeshFolder,'Width');
     normalSpringMesh.add(springmeshFolder,'Rest_Length',0.01,1);
     normalSpringMesh.add(springmeshFolder,'K_Spring',0.5,20);
     normalSpringMesh.add(springmeshFolder,'K_Damp',0.5,20);
+    normalSpringMesh.add(springmeshFolder,'Wind_Strength',0.01,10);
+    normalSpringMesh.add(springmeshFolder,'AddGravity');
+    normalSpringMesh.add(springmeshFolder,'ChangeSolver',{'SOLV_EULER':SOLV_EULER,'SOLV_MIDPOINT':SOLV_MIDPOINT,'SOLV_BACK_EULER':SOLV_BACK_EULER,'SOLV_BACK_MIDPT':SOLV_BACK_MIDPT});
     normalSpringMesh.add(springmeshFolder,'reload');
-    normalSpringMesh.open();
+    //normalSpringMesh.open();
+
+    var normaltornado = gui.addFolder('Tornado #3');
+    normaltornado.add(tornadoFolder,'particles');
+    normaltornado.add(tornadoFolder,'ChangeSolver',{'SOLV_EULER':SOLV_EULER,'SOLV_MIDPOINT':SOLV_MIDPOINT,'SOLV_BACK_EULER':SOLV_BACK_EULER,'SOLV_BACK_MIDPT':SOLV_BACK_MIDPT})
+    normaltornado.add(tornadoFolder,'reload');
+    //normaltornado.open();
+
+    var normalflame = gui.addFolder('Flame #4');
+    normalflame.add(flameFolder,'particles');
+    normalflame.add(flameFolder,'ChangeSolver',{'SOLV_EULER':SOLV_EULER,'SOLV_MIDPOINT':SOLV_MIDPOINT,'SOLV_BACK_EULER':SOLV_BACK_EULER,'SOLV_BACK_MIDPT':SOLV_BACK_MIDPT})
+    normalflame.add(flameFolder,'reload');
+    //normalflame.open();
 
 
-    var normalboids = gui.addFolder('Boids');
+    var normalboids = gui.addFolder('Boids #5');
     normalboids.add(boidsFolder,'particles');
     normalboids.add(boidsFolder,'Init_Velocity');
     normalboids.add(boidsFolder,'K_avoidence',0.5,10);
     normalboids.add(boidsFolder,'K_velocity',0.5,10);
     normalboids.add(boidsFolder,'K_centering',0.5,10);
     normalboids.add(boidsFolder,'Radius',0.1,2);
+    normalboids.add(boidsFolder,'ChangeSolver',{'SOLV_EULER':SOLV_EULER,'SOLV_MIDPOINT':SOLV_MIDPOINT,'SOLV_BACK_EULER':SOLV_BACK_EULER,'SOLV_BACK_MIDPT':SOLV_BACK_MIDPT})
     normalboids.add(boidsFolder,'reload');
-    normalboids.open();
+    //normalboids.open();
 
-    var normaltornado = gui.addFolder('Tornado');
-    normaltornado.add(tornadoFolder,'particles');
-    normaltornado.add(tornadoFolder,'Bubble_Radius',0.1,1.0);
-    normaltornado.add(tornadoFolder,'reload');
-    normaltornado.open();
-
-    var normalflame = gui.addFolder('Flame');
-    normalflame.add(flameFolder,'particles');
-    normalflame.add(flameFolder,'reload');
-    normalflame.open();
+    var normalBouncyball = gui.addFolder('Bouncy Balls #6');
+    normalBouncyball.add(bouncyballFolder, 'particles');
+    normalBouncyball.add(bouncyballFolder,'AddGravity');
+    normalBouncyball.add(bouncyballFolder,'ChangeSolver',{'SOLV_EULER':SOLV_EULER,'SOLV_MIDPOINT':SOLV_MIDPOINT,'SOLV_BACK_EULER':5,'SOLV_BACK_MIDPT':SOLV_BACK_MIDPT});
+    normalBouncyball.add(bouncyballFolder, 'reload');
+    //normalBouncyball.open();
 }
 
 

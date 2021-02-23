@@ -156,7 +156,7 @@ while(this.randX*this.randX +
 // constraint-applying objects, solvers and all other values needed to prepare
 // the particle-system to run without any further adjustments.
 
-VBOPartSys.prototype.initBouncy3D = function(count,offset_x,offset_y,offset_z) {
+VBOPartSys.prototype.initBouncy3D = function(count,offset_x,offset_y,offset_z,addGravity,solverType) {
     this.partCount = count;
     this.s1 = new Float32Array(this.partCount * PART_MAXVAR)
     this.s2 = new Float32Array(this.partCount * PART_MAXVAR)
@@ -169,11 +169,13 @@ VBOPartSys.prototype.initBouncy3D = function(count,offset_x,offset_y,offset_z) {
 
 // Create & init all force-causing objects------------------------------------
 
-    fTmp = new CForcer();
-    fTmp.forceType = F_GRAV_E;
-    fTmp.targFirst = 0;
-    fTmp.targCount = -1;
-    this.forceList.push(fTmp);
+    if (addGravity){
+        fTmp = new CForcer();
+        fTmp.forceType = F_GRAV_E;
+        fTmp.targFirst = 0;
+        fTmp.targCount = -1;
+        this.forceList.push(fTmp);
+    }
 
     fTmp = new CForcer();
     fTmp.forceType = F_DRAG;
@@ -198,12 +200,14 @@ VBOPartSys.prototype.initBouncy3D = function(count,offset_x,offset_y,offset_z) {
     fTmp.K_restLength = 0.5;
     this.forceList.push(fTmp);
 */
+/*
     console.log("PartSys.initBouncy3D() created PartSys.forceList[] array of ");
     console.log("\t\t", this.forceList.length, "CForcer objects:");
     for(i=0; i<this.forceList.length; i++) {
         console.log("CForceList[",i,"]");
         this.forceList[i].printMe();
         }
+*/
 // Create & init all constraint-causing objects-------------------------------
     cTmp = new CLimit();      // creat constraint-causing object, and
     cTmp.hitType = HIT_BOUNCE_VEL;  // set how particles 'bounce' from its surface,
@@ -255,7 +259,7 @@ VBOPartSys.prototype.initBouncy3D = function(count,offset_x,offset_y,offset_z) {
 
     //--------------------------init Particle System Controls:
     this.runMode =  3;// Master Control: 0=reset; 1= pause; 2=step; 3=run
-    this.solvType = SOLV_BACK_EULER;// adjust by s/S keys.
+    this.solvType = solverType;// adjust by s/S keys.
                         // SOLV_EULER (explicit, forward-time, as
                                             // found in BouncyBall03.01BAD and BouncyBall04.01badMKS)
                                             // SOLV_OLDGOOD for special-case implicit solver, reverse-time,
@@ -297,7 +301,7 @@ VBOPartSys.prototype.initBouncy3D = function(count,offset_x,offset_y,offset_z) {
 
 
 }
-VBOPartSys.prototype.initSpringPair = function(count,offset_x,offset_y,offset_z,kspring,kdamp) { 
+VBOPartSys.prototype.initSpringPair = function(count,offset_x,offset_y,offset_z,kspring,kdamp,addGravity,solverType) { 
     this.partCount = count;
     this.s1 = new Float32Array(this.partCount * PART_MAXVAR)
     this.s2 = new Float32Array(this.partCount * PART_MAXVAR)
@@ -310,13 +314,14 @@ VBOPartSys.prototype.initSpringPair = function(count,offset_x,offset_y,offset_z,
 
 
 // Create & init all force-causing objects------------------------------------
+    if(addGravity){
+        fTmp = new CForcer();
+        fTmp.forceType = F_GRAV_E;
+        fTmp.targFirst = 0;
+        fTmp.targCount = -1;
+        this.forceList.push(fTmp);
+    }
 /*
-    fTmp = new CForcer();
-    fTmp.forceType = F_GRAV_E;
-    fTmp.targFirst = 0;
-    fTmp.targCount = -1;
-    this.forceList.push(fTmp);
-
     fTmp = new CForcer();
     fTmp.forceType = F_FRIC;
     fTmp.d_fric = 0.01;
@@ -398,7 +403,7 @@ VBOPartSys.prototype.initSpringPair = function(count,offset_x,offset_y,offset_z,
 
     //--------------------------init Particle System Controls:
     this.runMode =  3;// Master Control: 0=reset; 1= pause; 2=step; 3=run
-    this.solvType = SOLV_BACK_EULER;// adjust by s/S keys.
+    this.solvType = solverType;// adjust by s/S keys.
                         // SOLV_EULER (explicit, forward-time, as
                                             // found in BouncyBall03.01BAD and BouncyBall04.01badMKS)
                                             // SOLV_OLDGOOD for special-case implicit solver, reverse-time,
@@ -436,7 +441,7 @@ VBOPartSys.prototype.initSpringPair = function(count,offset_x,offset_y,offset_z,
     }
     this.FSIZE = this.s1.BYTES_PER_ELEMENT;
     }
-VBOPartSys.prototype.initSpringMesh = function(offset_x,offset_y,offset_z,kspring,kdamp,height,width,restL){
+VBOPartSys.prototype.initSpringMesh = function(offset_x,offset_y,offset_z,kspring,kdamp,height,width,restL,windForce,addGravity,solverType){
     width = Math.ceil(width);
     height = Math.ceil(height);
     this.partCount = width * height;
@@ -450,13 +455,14 @@ VBOPartSys.prototype.initSpringMesh = function(offset_x,offset_y,offset_z,ksprin
     this.offset_z = offset_z;
 
 // Create & init all force-causing objects------------------------------------
+    if(addGravity){
+        fTmp = new CForcer();
+        fTmp.forceType = F_GRAV_E;
+        fTmp.targFirst = 0;
+        fTmp.targCount = -1;
+        this.forceList.push(fTmp);
+    }
 /*
-    fTmp = new CForcer();
-    fTmp.forceType = F_GRAV_E;
-    fTmp.targFirst = 0;
-    fTmp.targCount = -1;
-    this.forceList.push(fTmp);
-
     fTmp = new CForcer();
     fTmp.forceType = F_FRIC;
     fTmp.d_fric = 0.01;
@@ -474,7 +480,7 @@ VBOPartSys.prototype.initSpringMesh = function(offset_x,offset_y,offset_z,ksprin
     fTmp = new CForcer();
     fTmp.forceType = F_WIND;
     fTmp.windPosition = new Vector3([offset_x,offset_y-1,offset_z]);
-    fTmp.windStrength = 0.1;
+    fTmp.windStrength = windForce;
     fTmp.windRadius = 4;
     fTmp.windDirection = new Vector3([0.0,-1.0,0.0])
     fTmp.targFirst = 0;
@@ -596,7 +602,7 @@ VBOPartSys.prototype.initSpringMesh = function(offset_x,offset_y,offset_z,ksprin
 
     //--------------------------init Particle System Controls:
     this.runMode =  3;// Master Control: 0=reset; 1= pause; 2=step; 3=run
-    this.solvType = SOLV_BACK_EULER;// adjust by s/S keys.
+    this.solvType = solverType;// adjust by s/S keys.
                         // SOLV_EULER (explicit, forward-time, as
                                             // found in BouncyBall03.01BAD and BouncyBall04.01badMKS)
                                             // SOLV_OLDGOOD for special-case implicit solver, reverse-time,
@@ -637,7 +643,7 @@ VBOPartSys.prototype.initSpringMesh = function(offset_x,offset_y,offset_z,ksprin
     this.FSIZE = this.s1.BYTES_PER_ELEMENT;
 
 }
-VBOPartSys.prototype.initFlocking = function(count,offset_x,offset_y,offset_z,ka,kv,kc,rad,vel){
+VBOPartSys.prototype.initFlocking = function(count,offset_x,offset_y,offset_z,ka,kv,kc,rad,vel,solverType){
     this.partCount = count;
     this.s1 = new Float32Array(this.partCount * PART_MAXVAR)
     this.s2 = new Float32Array(this.partCount * PART_MAXVAR)
@@ -746,7 +752,7 @@ VBOPartSys.prototype.initFlocking = function(count,offset_x,offset_y,offset_z,ka
 
     //--------------------------init Particle System Controls:
     this.runMode =  3;// Master Control: 0=reset; 1= pause; 2=step; 3=run
-    this.solvType = SOLV_BACK_EULER;// adjust by s/S keys.
+    this.solvType = solverType;// adjust by s/S keys.
                         // SOLV_EULER (explicit, forward-time, as
                                             // found in BouncyBall03.01BAD and BouncyBall04.01badMKS)
                                             // SOLV_OLDGOOD for special-case implicit solver, reverse-time,
@@ -785,7 +791,7 @@ VBOPartSys.prototype.initFlocking = function(count,offset_x,offset_y,offset_z,ka
     this.FSIZE = this.s1.BYTES_PER_ELEMENT;
 }
 
-VBOPartSys.prototype.initFireReeves = function(count,offset_x,offset_y,offset_z){
+VBOPartSys.prototype.initFireReeves = function(count,offset_x,offset_y,offset_z,solverType){
     this.partCount = count;
     this.s1 = new Float32Array(this.partCount * PART_MAXVAR)
     this.s2 = new Float32Array(this.partCount * PART_MAXVAR)
@@ -883,7 +889,7 @@ VBOPartSys.prototype.initFireReeves = function(count,offset_x,offset_y,offset_z)
 
     //--------------------------init Particle System Controls:
     this.runMode =  3;// Master Control: 0=reset; 1= pause; 2=step; 3=run
-    this.solvType = SOLV_BACK_EULER;// adjust by s/S keys.
+    this.solvType = solverType;// adjust by s/S keys.
                         // SOLV_EULER (explicit, forward-time, as
                                             // found in BouncyBall03.01BAD and BouncyBall04.01badMKS)
                                             // SOLV_OLDGOOD for special-case implicit solver, reverse-time,
@@ -921,7 +927,7 @@ VBOPartSys.prototype.initFireReeves = function(count,offset_x,offset_y,offset_z)
     }
     this.FSIZE = this.s1.BYTES_PER_ELEMENT;
 }
-VBOPartSys.prototype.initTornado = function(count,offset_x,offset_y,offset_z,bubrad){
+VBOPartSys.prototype.initTornado = function(count,offset_x,offset_y,offset_z,solverType){
     this.partCount = count;
     this.s1 = new Float32Array(this.partCount * PART_MAXVAR)
     this.s2 = new Float32Array(this.partCount * PART_MAXVAR)
@@ -1030,7 +1036,7 @@ VBOPartSys.prototype.initTornado = function(count,offset_x,offset_y,offset_z,bub
 
     //--------------------------init Particle System Controls:
     this.runMode =  3;// Master Control: 0=reset; 1= pause; 2=step; 3=run
-    this.solvType = SOLV_BACK_EULER;// adjust by s/S keys.
+    this.solvType = solverType;// adjust by s/S keys.
                         // SOLV_EULER (explicit, forward-time, as
                                             // found in BouncyBall03.01BAD and BouncyBall04.01badMKS)
                                             // SOLV_OLDGOOD for special-case implicit solver, reverse-time,
@@ -1287,41 +1293,6 @@ VBOPartSys.prototype.applyForces = function(s,fList){
             }
         }
     }
-// s1dot contains the corresponding derivatives of the state variables.
-VBOPartSys.prototype.dotFinder = function(s1dot,s1){
-    var invMass;
-    var j = 0;
-    for(var i = 0; i < this.partCount; i += 1, j += PART_MAXVAR){
-        s1dot[j + PART_XPOS]     = s1[j + PART_XVEL];
-        s1dot[j + PART_YPOS]     = s1[j + PART_YVEL];
-        s1dot[j + PART_ZPOS]     = s1[j + PART_ZVEL];
-        s1dot[j + PART_WPOS]     = 0.0;
-        invMass                  = 1.0 / s1[j + PART_MASS];
-        s1dot[j + PART_XVEL]     = s1[j + PART_X_FTOT] * invMass;
-        s1dot[j + PART_YVEL]     = s1[j + PART_Y_FTOT] * invMass;
-        s1dot[j + PART_ZVEL]     = s1[j + PART_Z_FTOT] * invMass;
-        s1dot[j + PART_X_FTOT]   = 0.0;
-        s1dot[j + PART_Y_FTOT]   = 0.0;
-        s1dot[j + PART_Z_FTOT]   = 0.0;
-        s1dot[j + PART_R]        = 0.0;
-        s1dot[j + PART_G]        = 0.0;
-        s1dot[j + PART_B]        = 0.0;
-        s1dot[j + PART_MASS]     = 0.0;
-        s1dot[j + PART_DIAM]     = 0.0;
-        s1dot[j + PART_RENDMODE] = 0.0;
-        s1dot[j + PART_AGE]      = 0.0;
-    }
-}
-VBOPartSys.prototype.render = function(s){
-    gl.bufferSubData(
-        gl.ARRAY_BUFFER,
-        0,
-        this.s1
-    );
-    gl.uniform1i(this.u_runModeID, this.runMode);
-    gl.drawArrays( gl.POINTS, 0, this.partCount);
-
-}
 VBOPartSys.prototype.solver = function(){
     switch(this.solvType){
         case SOLV_EULER:
@@ -1442,6 +1413,41 @@ VBOPartSys.prototype.solver = function(){
         break;
             }
 		return;
+}
+// s1dot contains the corresponding derivatives of the state variables.
+VBOPartSys.prototype.dotFinder = function(s1dot,s1){
+    var invMass;
+    var j = 0;
+    for(var i = 0; i < this.partCount; i += 1, j += PART_MAXVAR){
+        s1dot[j + PART_XPOS]     = s1[j + PART_XVEL];
+        s1dot[j + PART_YPOS]     = s1[j + PART_YVEL];
+        s1dot[j + PART_ZPOS]     = s1[j + PART_ZVEL];
+        s1dot[j + PART_WPOS]     = 0.0;
+        invMass                  = 1.0 / s1[j + PART_MASS];
+        s1dot[j + PART_XVEL]     = s1[j + PART_X_FTOT] * invMass;
+        s1dot[j + PART_YVEL]     = s1[j + PART_Y_FTOT] * invMass;
+        s1dot[j + PART_ZVEL]     = s1[j + PART_Z_FTOT] * invMass;
+        s1dot[j + PART_X_FTOT]   = 0.0;
+        s1dot[j + PART_Y_FTOT]   = 0.0;
+        s1dot[j + PART_Z_FTOT]   = 0.0;
+        s1dot[j + PART_R]        = 0.0;
+        s1dot[j + PART_G]        = 0.0;
+        s1dot[j + PART_B]        = 0.0;
+        s1dot[j + PART_MASS]     = 0.0;
+        s1dot[j + PART_DIAM]     = 0.0;
+        s1dot[j + PART_RENDMODE] = 0.0;
+        s1dot[j + PART_AGE]      = 0.0;
+    }
+}
+VBOPartSys.prototype.render = function(s){
+    gl.bufferSubData(
+        gl.ARRAY_BUFFER,
+        0,
+        this.s1
+    );
+    gl.uniform1i(this.u_runModeID, this.runMode);
+    gl.drawArrays( gl.POINTS, 0, this.partCount);
+
 }
 VBOPartSys.prototype.doConstraints = function(sNow, sNext, cList) {
     //==============================================================================
@@ -1858,137 +1864,6 @@ VBOPartSys.prototype.adjust = function(){
 
 }
 
-
-
-VBOPartSys.prototype.doConstraints1 = function(){
-    //console.log(this.s1,this.s2)
-
-    if(this.bounceType==0){
-        var j = 0;
-        for(var i = 0; i < this.partCount; i += 1, j += PART_MAXVAR){
-            if(this.s2[j + PART_XPOS] < -0.9 && this.s2[j + PART_XVEL] < 0.0){
-                this.s2[j + PART_XVEL] = -this.resti * this.s2[j + PART_XVEL];
-            }
-            else if(this.s2[j + PART_XPOS] > 0.9 && this.s2[j + PART_XVEL] > 0.0){
-                this.s2[j + PART_XVEL] = -this.resti * this.s2[j + PART_XVEL];
-            }
-            if(this.s2[j + PART_YPOS] < -0.9 && this.s2[j + PART_YVEL] < 0.0) {
-                this.s2[j + PART_YVEL] = -this.resti * this.s2[j + PART_YVEL];
-            }
-            else if( this.s2[j + PART_YPOS] >  0.9 && this.s2[j + PART_YVEL] > 0.0) {
-                this.s2[j + PART_YVEL] = -this.resti * this.s2[j + PART_YVEL];
-            }
-            if(this.s2[j + PART_ZPOS] < -0.9 && this.s2[j + PART_ZVEL] < 0.0) {
-                this.s2[j + PART_ZVEL] = -this.resti * this.s2[j + PART_ZVEL];
-            }
-            else if( this.s2[j + PART_ZPOS] >  0.9 && this.s2[j + PART_ZVEL] > 0.0) {
-                this.s2[j + PART_ZVEL] = -this.resti * this.s2[j + PART_ZVEL];
-            }
-
-        if(      this.s2[j + PART_YPOS] < -0.9) this.s2[j + PART_YPOS] = -0.9;
-        else if( this.s2[j + PART_YPOS] >  0.9) this.s2[j + PART_YPOS] =  0.9; // ceiling
-        if(      this.s2[j + PART_XPOS] < -0.9) this.s2[j + PART_XPOS] = -0.9; // left wall
-        else if( this.s2[j + PART_XPOS] >  0.9) this.s2[j + PART_XPOS] =  0.9; // right wall
-        if(      this.s2[j + PART_ZPOS] < -0.9) this.s2[j + PART_ZPOS] = -0.9; // near wall
-        else if( this.s2[j + PART_ZPOS] >  0.9) this.s2[j + PART_ZPOS] =  0.9; // far wall
-        }
-    }
-    else if(this.bounceType == 1){
-        var j = 0;
-        for(var i = 0; i < this.partCount; i += 1, j+= PART_MAXVAR){
-            // Left wall
-            if(this.s2[j + PART_XPOS] < -0.9){
-                this.s2[j + PART_XPOS] = -0.9;
-                this.s2[j + PART_XVEL] = this.s1[j + PART_XVEL];
-                this.s2[j + PART_XVEL] *= this.drag;
-                if(this.s2[j + PART_XVEL] < 0.0)
-                    this.s2[j + PART_XVEL] = -this.resti * this.s2[j + PART_XVEL];
-                else
-                    this.s2[j + PART_XVEL] = this.resti * this.s2[j + PART_XVEL];
-            }
-            // Right wall
-            else if(this.s2[j + PART_XPOS] > 0.9) { // && this.s2[j + PART_XVEL] > 0.0) {
-                // collision!
-                this.s2[j + PART_XPOS] = 0.9; // 1) resolve contact: put particle at wall.
-                this.s2[j + PART_XVEL] = this.s1[j + PART_XVEL];	// 2a) undo velocity change:
-                this.s2[j + PART_XVEL] *= this.drag;			        // 2b) apply drag:
-                // 3) BOUNCE:  reversed velocity*coeff-of-restitution.
-                // ATTENTION! VERY SUBTLE PROBLEM HERE!
-                // need a velocity-sign test here that ensures the 'bounce' step will
-                // always send the ball outwards, away from its wall or floor collision.
-                if(this.s2[j + PART_XVEL] > 0.0)
-                    this.s2[j + PART_XVEL] = -this.resti * this.s2[j + PART_XVEL]; // need sign change--bounce!
-                else
-                    this.s2[j + PART_XVEL] =  this.resti * this.s2[j + PART_XVEL];	// sign changed-- don't need another.
-                }
-            //--------  floor (-Y) wall  --------------------------------------------
-            if(this.s2[j + PART_YPOS] < -0.9) { // && this.s2[j + PART_YVEL] < 0.0) {
-                // collision! floor...
-                this.s2[j + PART_YPOS] = -0.9;// 1) resolve contact: put particle at wall.
-                this.s2[j + PART_YVEL] = this.s1[j + PART_YVEL];	// 2a) undo velocity change:
-                this.s2[j + PART_YVEL] *= this.drag;		          // 2b) apply drag:
-                // 3) BOUNCE:  reversed velocity*coeff-of-restitution.
-                // ATTENTION! VERY SUBTLE PROBLEM HERE!
-                // need a velocity-sign test here that ensures the 'bounce' step will
-                // always send the ball outwards, away from its wall or floor collision.
-                if(this.s2[j + PART_YVEL] < 0.0)
-                    this.s2[j + PART_YVEL] = -this.resti * this.s2[j + PART_YVEL]; // need sign change--bounce!
-                else
-                    this.s2[j + PART_YVEL] =  this.resti * this.s2[j + PART_YVEL];	// sign changed-- don't need another.
-                }
-            //--------  ceiling (+Y) wall  ------------------------------------------
-            else if( this.s2[j + PART_YPOS] > 0.9 ) { // && this.s2[j + PART_YVEL] > 0.0) {
-                // collision! ceiling...
-                this.s2[j + PART_YPOS] = 0.9;// 1) resolve contact: put particle at wall.
-                this.s2[j + PART_YVEL] = this.s1[j + PART_YVEL];	// 2a) undo velocity change:
-                this.s2[j + PART_YVEL] *= this.drag;			        // 2b) apply drag:
-                // 3) BOUNCE:  reversed velocity*coeff-of-restitution.
-                // ATTENTION! VERY SUBTLE PROBLEM HERE!
-                // need a velocity-sign test here that ensures the 'bounce' step will
-                // always send the ball outwards, away from its wall or floor collision.
-                if(this.s2[j + PART_YVEL] > 0.0)
-                    this.s2[j + PART_YVEL] = -this.resti * this.s2[j + PART_YVEL]; // need sign change--bounce!
-                else
-                    this.s2[j + PART_YVEL] =  this.resti * this.s2[j + PART_YVEL];	// sign changed-- don't need another.
-            }
-            //--------  near (-Z) wall  ---------------------------------------------
-            if( this.s2[j + PART_ZPOS] < -0.9 ) { // && this.s2[j + PART_ZVEL] < 0.0 ) {
-                // collision!
-                this.s2[j + PART_ZPOS] = -0.9;// 1) resolve contact: put particle at wall.
-                this.s2[j + PART_ZVEL] = this.s1[j + PART_ZVEL];  // 2a) undo velocity change:
-                this.s2[j + PART_ZVEL] *= this.drag;			        // 2b) apply drag:
-                // 3) BOUNCE:  reversed velocity*coeff-of-restitution.
-                // ATTENTION! VERY SUBTLE PROBLEM HERE! ------------------------------
-                // need a velocity-sign test here that ensures the 'bounce' step will
-                // always send the ball outwards, away from its wall or floor collision.
-                if( this.s2[j + PART_ZVEL] < 0.0)
-                    this.s2[j + PART_ZVEL] = -this.resti * this.s2[j + PART_ZVEL]; // need sign change--bounce!
-                else
-                    this.s2[j + PART_ZVEL] =  this.resti * this.s2[j + PART_ZVEL];	// sign changed-- don't need another.
-            }
-            //--------  far (+Z) wall  ----------------------------------------------
-            else if( this.s2[j + PART_ZPOS] >  0.9) { // && this.s2[j + PART_ZVEL] > 0.0) {
-                // collision!
-                this.s2[j + PART_ZPOS] = 0.9; // 1) resolve contact: put particle at wall.
-                this.s2[j + PART_ZVEL] = this.s1[j + PART_ZVEL];  // 2a) undo velocity change:
-                this.s2[j + PART_ZVEL] *= this.drag;			        // 2b) apply drag:
-                // 3) BOUNCE:  reversed velocity*coeff-of-restitution.
-                // ATTENTION! VERY SUBTLE PROBLEM HERE! ------------------------------
-                // need a velocity-sign test here that ensures the 'bounce' step will
-                // always send the ball outwards, away from its wall or floor collision.
-                if(this.s2[j + PART_ZVEL] > 0.0)
-                    this.s2[j + PART_ZVEL] = -this.resti * this.s2[j + PART_ZVEL]; // need sign change--bounce!
-                else
-                    this.s2[j + PART_ZVEL] =  this.resti * this.s2[j + PART_ZVEL];	// sign changed-- don't need another.
-                } // end of (+Z) wall constraint
-        }
-    }
-
-    else {
-        console.log('?!?! unknown constraint: PartSys.bounceType==' + this.bounceType);
-        return;
-    }
-}
     /*
         //-----------------------------add 'age' constraint:
         if(this.isFountain == 1)    // When particle age falls to zero, re-initialize
